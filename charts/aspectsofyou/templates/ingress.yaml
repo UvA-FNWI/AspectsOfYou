@@ -17,6 +17,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: aspectsofyou
+                name: aspectsofyou-endpoint
                 port:
                   number: 8080

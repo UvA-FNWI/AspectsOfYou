@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aspectsofyou
+  name: aspectsofyou-endpoint
   namespace: "{{ .Release.Namespace }}"
 spec:
   selector:
     matchLabels:
-      app: aspectsofyou
+      app: aspectsofyou-endpoint
   replicas: 1
   revisionHistoryLimit: 3
   template:
     metadata:
       labels:
-        app: aspectsofyou
+        app: aspectsofyou-endpoint
     spec:
       containers:
-        - name: aspectsofyou
-          image: "{{ .Values.image }}:{{ .Values.tag }}"
+        - name: aspectsofyou-endpoint
+          image: "{{ .Values.image }}-endpoint:{{ .Values.tag }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 80
