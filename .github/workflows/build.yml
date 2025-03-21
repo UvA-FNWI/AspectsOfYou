@@ -19,6 +19,7 @@ jobs:
           set -euxo pipefail
           docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-endpoint:latest" .
           docker push "fnwicr.azurecr.io/aspectsofyou-endpoint:latest"
+        working-directory: ./aspectsofyou-endpoint
 
       - name: Build chart and release
         env:
