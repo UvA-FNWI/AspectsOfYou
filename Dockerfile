@@ -7,7 +7,7 @@ RUN dotnet restore
 
 # Copy everything else and build
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o out UvA.AspectsOfYou.Endpoint.csproj
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
