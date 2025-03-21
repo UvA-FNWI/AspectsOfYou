@@ -1,0 +1,31 @@
+name: build and push container
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build container
+        run: |
+          set -euxo pipefail
+          docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-endpoint:latest" .
+          docker push "fnwicr.azurecr.io/aspectsofyou-endpoint:latest"
+
+      - name: Build chart and release
+        env:
+          UPDATER_SECRET: ${{ secrets.UPDATER_SECRET_K8S }}
+        run: |
+          set -euxo pipefail
+          export VERSION=$(date "+0.1.%Y%m%d%H%M%S")
+          helm package --version "${VERSION}" --app-version "${VERSION}" charts/aspectsofyou
+          helm push "aspectsofyou-${VERSION}.tgz" oci://fnwicr.azurecr.io/helm
+          curl "https://k8s.datanose.nl/gitops-updater?name=aspectsofyou&secret=${UPDATER_SECRET}&version=${VERSION}"

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspectsofyou
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  selector:
+    matchLabels:
+      app: aspectsofyou
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: aspectsofyou
+    spec:
+      containers:
+        - name: aspectsofyou
+          image: "{{ .Values.image }}:{{ .Values.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: aspectsofyou-secret
+          {{- if .Values.azure }}
+          volumeMounts:
+            - name: secrets-store-inline
+              mountPath: "/etc/secrets"
+              readOnly: true
+          {{- end }}
+
+      {{- if .Values.azure }}
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "aspectsofyou-secretproviderclass"
+      {{- end }}

@@ -1,0 +1,15 @@
+hostname: aspectsofyou.local
+ingressClass: nginx
+image: fnwicr.azurecr.io/aspectsofyou
+tag: latest
+
+azure:
+  keyvaultName: keyvaultName
+  resourceGroup: resourceGroupName
+  subscriptionId: subscriptionId
+  tenantId: tenantId
+  clientId: clientId
+  identityName: identityName
+  secrets:
+    - name: aspectsofyou-connectionstring
+      key: ConnectionStrings__AspectContext
