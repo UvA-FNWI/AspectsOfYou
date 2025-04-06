@@ -15,33 +15,79 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// Modified in order to retry multiple times to connect to the postgresql database.
 using (var scope = app.Services.CreateScope())
-    await scope.ServiceProvider.GetRequiredService<AspectContext>().Database.MigrateAsync();
-
-app.MapPost("/api/answers", async (AspectContext db, AnswerDto ans) =>
 {
-    db.Answers.Add(new Answer
+    var db = scope.ServiceProvider.GetRequiredService<AspectContext>();
+    var retryCount = 0;
+    const int maxRetries = 10;
+
+    while (retryCount < maxRetries)
     {
-        Id = Guid.NewGuid(),
-        Date = DateOnly.FromDateTime(DateTime.Now),
-        QuestionId = ans.QuestionId,
-        ChoiceId = ans.ChoiceId
-    });
+        try
+        {
+            await db.Database.MigrateAsync();
+            break;
+        }
+        catch (Exception ex)
+        {
+            retryCount++;
+            Console.WriteLine($"Database connection attempt {retryCount} failed: {ex.Message}");
+            if (retryCount >= maxRetries)
+                throw;
+            await Task.Delay(2000 * retryCount);
+        }
+    }
+}
+
+app.MapPost("/api/addsurveys", async (AspectContext db, SurveyDto surveyDto) =>
+{
+    // survey
+    var surveyID = Guid.NewGuid();
+    var survey = new Survey
+    {
+        SurveyId = surveyID,
+        Title = surveyDto.Title
+    };
+
+    // questions
+    foreach (var questionDto in surveyDto.Questions)
+    {
+        var questionId = Guid.NewGuid();
+        var question = new Question
+        {
+            QuestionId = questionId,
+            QuestionText = questionDto.QuestionText,
+            QuestionType = questionDto.QuestionType,
+            SurveyId = surveyID
+        };
+
+        survey.Questions.Add(question);
+
+        // answers
+        foreach (var answerDto in questionDto.AnswerOptions)
+        {
+            var answer = new Answer
+            {
+                AnswerID = Guid.NewGuid(),
+                AnswerText = answerDto.AnswerText,
+                ExtraText = answerDto.ExtraText,
+                QuestionId = questionId
+            };
+
+            question.Answers.Add(answer)
+        }
+    }
+
+    // this will recursively also add all questions and answers
+    db.Surveys.Add(survey);
     await db.SaveChangesAsync();
+
+    return Results.Created($"/api/surveys/{survey.SurveyId}", survey.SurveyId);
 });
 
-app.MapGet("/api/answerSummary", async (AspectContext db) =>
-{
-    return await db.Answers
-        .GroupBy(a => new {a.QuestionId, a.ChoiceId, a.Date})
-        .Select(g => new
-        {
-            g.Key.Date,
-            g.Key.QuestionId,
-            g.Key.ChoiceId,
-            Count = g.Count()
-        })
-        .ToListAsync();
-});
+// TODO: add point to register answers to questions
+
+// TODO: add point to get all responses for questions
 
 app.Run();
