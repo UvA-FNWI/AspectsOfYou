@@ -40,42 +40,42 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.MapPost("/api/addsurveys", async (AspectContext db, SurveyDto surveyDto) =>
+app.MapPost("/api/addsurveys", async (AspectContext db, Survey surveyObj) =>
 {
     // survey
     var surveyID = Guid.NewGuid();
     var survey = new Survey
     {
         SurveyId = surveyID,
-        Title = surveyDto.Title
+        Title = surveyObj.Title
     };
 
     // questions
-    foreach (var questionDto in surveyDto.Questions)
+    foreach (var questionObj in surveyObj.Questions)
     {
         var questionId = Guid.NewGuid();
         var question = new Question
         {
             QuestionId = questionId,
-            QuestionText = questionDto.QuestionText,
-            QuestionType = questionDto.QuestionType,
+            QuestionText = questionObj.QuestionText,
+            QuestionType = questionObj.QuestionType,
             SurveyId = surveyID
         };
 
         survey.Questions.Add(question);
 
         // answers
-        foreach (var answerDto in questionDto.AnswerOptions)
+        foreach (var answerObj in questionObj.Answers)
         {
             var answer = new Answer
             {
                 AnswerID = Guid.NewGuid(),
-                AnswerText = answerDto.AnswerText,
-                ExtraText = answerDto.ExtraText,
+                AnswerText = answerObj.AnswerText,
+                ExtraText = answerObj.ExtraText,
                 QuestionId = questionId
             };
 
-            question.Answers.Add(answer)
+            question.Answers.Add(answer);
         }
     }
 
@@ -87,6 +87,51 @@ app.MapPost("/api/addsurveys", async (AspectContext db, SurveyDto surveyDto) =>
 });
 
 // TODO: add point to register answers to questions
+app.MapPost("/api/addsurveys", async (AspectContext db, Survey surveyObj) =>
+{
+    // survey
+    var surveyID = Guid.NewGuid();
+    var survey = new Survey
+    {
+        SurveyId = surveyID,
+        Title = surveyObj.Title
+    };
+
+    // questions
+    foreach (var questionObj in surveyObj.Questions)
+    {
+        var questionId = Guid.NewGuid();
+        var question = new Question
+        {
+            QuestionId = questionId,
+            QuestionText = questionObj.QuestionText,
+            QuestionType = questionObj.QuestionType,
+            SurveyId = surveyID
+        };
+
+        survey.Questions.Add(question);
+
+        // answers
+        foreach (var answerObj in questionObj.Answers)
+        {
+            var answer = new Answer
+            {
+                AnswerID = Guid.NewGuid(),
+                AnswerText = answerObj.AnswerText,
+                ExtraText = answerObj.ExtraText,
+                QuestionId = questionId
+            };
+
+            question.Answers.Add(answer);
+        }
+    }
+
+    // this will recursively also add all questions and answers
+    db.Surveys.Add(survey);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/api/surveys/{survey.SurveyId}", survey.SurveyId);
+});
 
 // TODO: add point to get all responses for questions
 

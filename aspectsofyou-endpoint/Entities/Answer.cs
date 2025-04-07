@@ -6,7 +6,7 @@ public class Answer
 {
     public Guid AnswerID { get; set; }
     public string AnswerText { get; set; }
-    public bool ExtraText { get; set; }
+    public bool ExtraText { get; set; } = false;
 
     // relations with other tables
     public Guid QuestionId { get; set; }
