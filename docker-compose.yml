@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./forms/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - forms-network
+
+  backend:
+    build:
+      context: ./forms/backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
+    depends_on:
+      - aspectsofyou-endpoint
+    networks:
+      - forms-network
+      - aspectsofyou-network
+
+  admin-backend:
+    build:
+      context: ./admin/backend
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3001"
+    environment:
+      - PORT=3001
+      - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
+    depends_on:
+      - aspectsofyou-endpoint
+    networks:
+      - forms-network
+      - aspectsofyou-network
+
+  admin-frontend:
+    build:
+      context: ./admin/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
+    depends_on:
+      - admin-backend
+    networks:
+      - forms-network
+
+  aspectsofyou-endpoint:
+    build: ./aspectsofyou-endpoint
+    ports:
+      - "5059:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry
+    networks:
+      - forms-network
+      - aspectsofyou-network
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=strawberry
+      - POSTGRES_PASSWORD=strawberry
+      - POSTGRES_DB=aspects
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - aspectsofyou-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strawberry -d aspects"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+
+networks:
+  forms-network:
+    name: forms-network
+  aspectsofyou-network:
+    name: aspectsofyou-network

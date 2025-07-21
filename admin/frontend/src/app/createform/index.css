@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.text-color-primary-main {
+  color: #bc0031;
+}
+
+.text-color-primary-dark {
+  color: #840022;
+}
+
+.text-color-primary-light {
+  color: #de8098;
+}
+
+.text-color-primary-lighter {
+  color: #E6E5E3;
+}
+
+.text-color-dark {
+  color: #1B1918;
+}
+
+.background-color-primary-main {
+  background-color: #bc0031;
+}
+
+.background-color-primary-dark {
+  background-color: #840022;
+}
+
+.background-color-primary-light {
+  background-color: #de8098;
+}
+
+.background-color-primary-lighter {
+  background-color: #E6E5E3;
+}
+
+.background-color-dark {
+  background-color: #1B1918;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: "utopia-std", serif;
+  font-weight: 400;
+  font-style: normal;
+  color: #1B1918;
+}
+
+h1,
+h2,
+h3,
+p {
+  font-family: "utopia-std", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+h1,
+h2 {
+  font-weight: 700;
+  font-style: normal;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+[contenteditable]:focus {
+  outline: 2px solid var(--color-primary-main, #bc0031);
+}
+
+.questionbutton {
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+

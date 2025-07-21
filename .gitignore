@@ -1,6 +1,10 @@
 bin/
 obj/
 .idea/
-
+node_modules
 .DS_Store
 *.DotSettings.user
+admin/frontend/node_modules
+admin/backend/node_modules
+forms/frontend/node_modules
+forms/backend/node_modules

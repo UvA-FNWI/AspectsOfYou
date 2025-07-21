@@ -1,0 +1,34 @@
+[
+    {
+      "questionId": "341f247d-5e3e-45d7-86e0-ff9285ef7602",
+      "questionText": "What activities did you do today?",
+      "answers": [
+        {
+          "answerId": "c56456df-2c67-4f82-aed6-89204d64cbf4",
+          "answerText": "Exercise",
+          "count": 3
+        },
+        {
+          "answerId": "fe795ba0-183f-40be-ae8a-a59cc0c996b4",
+          "answerText": "Reading",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "questionId": "39c469aa-edea-4c1c-9c9a-130ea2d3ba2b",
+      "questionText": "How are you feeling today?",
+      "answers": [
+        {
+          "answerId": "76f70a2c-5112-4eba-95a2-b843821d625e",
+          "answerText": "Great",
+          "count": 2
+        },
+        {
+          "answerId": "e0241ec0-dcbd-4d22-932d-96f953c7634f",
+          "answerText": "Good",
+          "count": 1
+        }
+      ]
+    }
+  ]

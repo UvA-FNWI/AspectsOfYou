@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3001
+    depends_on:
+      - backend
+    networks:
+      - forms-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DOTNET_API_URL=http://aspectsofyou-endpoint:80
+    depends_on:
+      - aspectsofyou-endpoint
+    networks:
+      - forms-network
+      - aspectsofyou-network
+
+networks:
+  forms-network:
+    driver: bridge
+  aspectsofyou-network:
+    external: true 

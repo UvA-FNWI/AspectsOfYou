@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  webapi:
+  aspectsofyou-endpoint:
     build: .
     ports:
       - "5059:8080"
@@ -9,6 +9,8 @@ services:
         condition: service_healthy
     environment:
       - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry
+    networks:
+      - aspectsofyou-network
 
   postgres:
     image: postgres:latest
@@ -20,6 +22,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - aspectsofyou-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U strawberry -d aspects"]
       interval: 5s
@@ -28,3 +32,7 @@ services:
 
 volumes:
   postgres-data:
+
+networks:
+  aspectsofyou-network:
+    name: aspectsofyou-network

@@ -115,6 +115,28 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.ToTable("Surveys");
                 });
 
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.User", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("CanCreateSurveys")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Answer", b =>
                 {
                     b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.Question", "Question")

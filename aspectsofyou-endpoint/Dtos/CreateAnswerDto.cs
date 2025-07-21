@@ -1,8 +1,7 @@
 namespace UvA.AspectsOfYou.Endpoint.Dtos;
 
-public class AnswerDto
+public class CreateAnswerDto
 {
-    public Guid AnswerId { get; set; }
     public string AnswerText { get; set; }
     public bool ExtraText { get; set; }
 }

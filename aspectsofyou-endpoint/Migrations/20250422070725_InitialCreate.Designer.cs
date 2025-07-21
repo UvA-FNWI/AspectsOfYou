@@ -12,7 +12,7 @@ using UvA.AspectsOfYou.Endpoint.Entities;
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
     [DbContext(typeof(AspectContext))]
-    [Migration("20250406160641_InitialCreate")]
+    [Migration("20250422070725_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -116,6 +116,28 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.HasKey("SurveyId");
 
                     b.ToTable("Surveys");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.User", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("CanCreateSurveys")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Answer", b =>
