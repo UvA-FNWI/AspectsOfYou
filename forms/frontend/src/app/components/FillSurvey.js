@@ -77,7 +77,6 @@ export default function FillSurvey({ survey, onComplete, uploadAnswerToDatabase 
           ))}
         </div>
 
-        {/* Next Button */}
         <button
           className="w-full py-3 px-4 background-color-primary-main text-white text-white rounded-md font-medium text-lg hover:background-color-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNext}

@@ -70,8 +70,10 @@ export default function SurveyPage({ params }) {
   const handleDownloadPDF = async () => {
     const element = document.querySelector('.survey-content');
     const canvas = await html2canvas(element, {
-      ignoreElements: (el) => el.tagName === 'SELECT',
+      ignoreElements: (el) =>
+        el.tagName === 'SELECT' || el.classList.contains('invisible_select'),
     });
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF();
     const imgWidth = pdf.internal.pageSize.getWidth();
@@ -109,10 +111,10 @@ export default function SurveyPage({ params }) {
   }
   
   return (
-    <div className="flex flex-col justify-center w-full mx-auto px-4 h-screen py-8">
+    <div className="flex flex-col justify-center w-full mx-auto px-4 py-8">
       <button
         onClick={handleDownloadPDF}
-        className="absolute top-4 right-4 px-15 py-10
+        className="absolute top-4 right-4 px-5 py-2
               rounded-full 
               background-color-primary-main 
               text-white 
@@ -121,7 +123,7 @@ export default function SurveyPage({ params }) {
       >
         Download as PDF
       </button>
-      <div className="survey-content">
+      <div className="survey-content max-w-2xl">
         {isEditing ? (
           <input
             type="text"

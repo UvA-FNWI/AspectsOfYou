@@ -4,10 +4,24 @@ import { ThemeProvider } from '@mui/material/styles';
 import uvaTheme from './theme';
 
 export default function ShowBarplot({ question }) {
+  const [title, setTitle] = React.useState(question.questionText);
+  const [isEditing, setIsEditing] = React.useState(false);
   const barData = question.answers.map((answer) => ({
     category: answer.answerText,
     count: parseInt(answer.count, 10),
   }));
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+  };
 
   const uvaColors = [
     '#bc0031', '#de8098', '#840022',
@@ -16,7 +30,22 @@ export default function ShowBarplot({ question }) {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="mb-4 text-center">{question.questionText}</h2>
+      {isEditing ? (
+          <input
+            type="text"
+            value={title}
+            onChange={handleTitleChange}
+            onBlur={handleBlur}
+            className="mb-4 text-center font-bold border border-gray-300 rounded px-2 py-1"
+          />
+        ) : (
+          <h2
+            className="mb-4 text-center"
+            onDoubleClick={handleDoubleClick}
+          >
+            {title}
+          </h2>
+        )}
       <ThemeProvider theme={uvaTheme}>
         <BarChart
           width={250}
