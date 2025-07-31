@@ -72,11 +72,12 @@ app.MapPost("/api/surveys", async (AspectContext db, CreateSurveyDto surveyDto) 
     {
         SurveyId = Guid.NewGuid(),
         Title = surveyDto.Title,
-        Questions = surveyDto.Questions.Select(q => new Question
+        Questions = surveyDto.Questions.Select((q, index) => new Question
         {
             QuestionId = Guid.NewGuid(),
             QuestionText = q.QuestionText,
             QuestionType = q.QuestionType,
+            OrderIndex = index,
             Answers = q.Answers.Select(a => new Answer
             {
                 AnswerID = Guid.NewGuid(),
@@ -120,11 +121,12 @@ app.MapGet("/api/surveys", async (AspectContext db) =>
         {
             SurveyId = s.SurveyId,
             Title = s.Title,
-            Questions = s.Questions.Select(q => new QuestionDto
+            Questions = s.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuestionDto
             {
                 QuestionId = q.QuestionId,
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
+                OrderIndex = q.OrderIndex,
                 Answers = q.Answers.Select(a => new AnswerDto
                 {
                     AnswerId = a.AnswerID,
@@ -148,11 +150,12 @@ app.MapGet("/api/surveys/{id}", async (AspectContext db, Guid id) =>
         {
             SurveyId = s.SurveyId,
             Title = s.Title,
-            Questions = s.Questions.Select(q => new QuestionDto
+            Questions = s.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuestionDto
             {
                 QuestionId = q.QuestionId,
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
+                OrderIndex = q.OrderIndex,
                 Answers = q.Answers.Select(a => new AnswerDto
                 {
                     AnswerId = a.AnswerID,
@@ -205,41 +208,71 @@ app.MapGet("/api/questions/{questionId}/responses", async (AspectContext db, Gui
 
 app.MapGet("/api/surveys/{surveyId}/responseCounts", async (AspectContext db, Guid surveyId) =>
 {
-    var grouped = await db.Responses
-        // filter to this survey
+    // handles multiple and open question seperatly
+    var multipleChoiceResults = await db.Responses
         .Where(r => r.SurveyId == surveyId)
-
-        // join in the question and answer texts
         .Join(db.Questions,
                 r => r.QuestionId,
                 q => q.QuestionId,
                 (r, q) => new { r, q })
+        .Where(rq => rq.q.QuestionType != 2) 
         .Join(db.Answers,
                 rq => rq.r.AnswerId,
-                a  => a.AnswerID,
+                a => a.AnswerID,
                 (rq, a) => new { rq.r, rq.q, a })
-
-        // ugly but if I remove question text, it errors
-        .GroupBy(
-            x => new {
-                x.q.QuestionId,
-                x.q.QuestionText,
-                x.a.AnswerID,
-                x.a.AnswerText
-            }
-        )
-
-        // project into DTO
+        .GroupBy(x => new {
+            x.q.QuestionId,
+            x.q.QuestionText,
+            x.q.OrderIndex,
+            x.a.AnswerID,
+            x.a.AnswerText
+        })
         .Select(g => new ResponseCountDto {
-            QuestionId  = g.Key.QuestionId,
-            QuestionText= g.Key.QuestionText,
-            AnswerId    = g.Key.AnswerID,
-            AnswerText  = g.Key.AnswerText,
-            Count       = g.Count()
+            QuestionId = g.Key.QuestionId,
+            QuestionText = g.Key.QuestionText,
+            AnswerId = g.Key.AnswerID,
+            AnswerText = g.Key.AnswerText,
+            Count = g.Count()
+        })
+        .OrderBy(r => r.QuestionId)
+        .ToListAsync();
+
+    var openEndedResults = await db.Responses
+        .Where(r => r.SurveyId == surveyId)
+        .Join(db.Questions,
+                r => r.QuestionId,
+                q => q.QuestionId,
+                (r, q) => new { r, q })
+        .Where(rq => rq.q.QuestionType == 2)
+        .Select(x => new {
+            QuestionId = x.q.QuestionId,
+            QuestionText = x.q.QuestionText,
+            ResponseText = x.r.Additional ?? "No response"
+        })
+        .GroupBy(x => new {
+            x.QuestionId,
+            x.QuestionText,
+            x.ResponseText
+        })
+        .Select(g => new ResponseCountDto {
+            QuestionId = g.Key.QuestionId,
+            QuestionText = g.Key.QuestionText,
+            AnswerId = new Guid("00000000-0000-0000-0000-000000000000"),
+            AnswerText = g.Key.ResponseText,
+            Count = g.Count()
         })
         .ToListAsync();
 
-    return Results.Ok(grouped);
+    var questionOrder = await db.Questions
+        .Where(q => q.SurveyId == surveyId)
+        .Select(q => new { q.QuestionId, q.OrderIndex })
+        .ToDictionaryAsync(q => q.QuestionId, q => q.OrderIndex);
+
+    var combined = multipleChoiceResults.Concat(openEndedResults)
+        .OrderBy(r => questionOrder.ContainsKey(r.QuestionId) ? questionOrder[r.QuestionId] : int.MaxValue)
+        .ToList();
+    
+    return Results.Ok(combined);
 });
 
 

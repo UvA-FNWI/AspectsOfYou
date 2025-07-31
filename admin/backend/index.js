@@ -26,7 +26,6 @@ function regroupByQuestion(responses) {
     grouped[questionId].answers.push({ answerId, answerText, count });
   });
 
-  console.log(grouped);
   return Object.values(grouped);
 }
 
@@ -75,10 +74,9 @@ app.get('/api/surveys/:surveyId/answers', async (req, res) => {
     if (!response.ok) {
       throw new Error(`Error fetching counts: ${response.statusText}`);
     }
-    console.log(response);
+    
     const counts = await response.json(); 
-
-    transformedData = regroupByQuestion(counts)
+    transformedData = regroupByQuestion(counts);
     res.json(transformedData);
   } catch (error) {
     console.error('Error fetching survey answers:', error);

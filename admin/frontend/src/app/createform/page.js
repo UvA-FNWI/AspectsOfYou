@@ -8,6 +8,8 @@ import MultiChoiceQuestion from "../components/MultiChoiceQuestion";
 
 export default function CeateForms() {
   const [questions, setQuestions] = useState([]);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverItem, setDragOverItem] = useState(null);
 
   const [formTitle, setFormTitle] = useState(
       "Double-click to edit form title"
@@ -19,11 +21,11 @@ export default function CeateForms() {
       {
         id: uuidv4(),
         type,
-        text: '',
+        text: 'This is a question',
         answers: type === 'single' || type === 'multi' ? [
-          { text: '', extraText: false }
+          { text: 'This is an answer', extraText: false }
         ] : type === 'open' ? [
-          { text: '', extraText: true }
+          { text: 'This is an open-ended answer', extraText: true }
         ] : undefined
       },
     ]);
@@ -48,6 +50,53 @@ export default function CeateForms() {
       )
     );
   };
+
+  const handleDragStart = (e, index) => {
+    setDraggedItem(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    setDragOverItem(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverItem(null);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+
+    if (draggedItem === null || draggedItem === dropIndex) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      return;
+    }
+
+    const newQuestions = [...questions];
+    const draggedQuestion = newQuestions[draggedItem];
+
+    newQuestions.splice(draggedItem, 1);
+    newQuestions.splice(dropIndex, 0, draggedQuestion);
+
+    setQuestions(newQuestions);
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  const DragHandle = () => (
+    <div className="cursor-grab active:cursor-grabbing p-2 mr-4 flex items-center">
+      <div className="grid grid-cols-2 gap-1 w-4 h-3">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="w-1 h-1 bg-gray-400 rounded-full"
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   const questionTypeMap = {
     'single': 0,
@@ -102,7 +151,7 @@ export default function CeateForms() {
           <button
             onClick={() => addQuestion("single")}
             className=" questionbutton
-              px-15 py-10
+              px-8 py-4
               rounded-full 
               background-color-primary-main 
               text-white 
@@ -115,7 +164,7 @@ export default function CeateForms() {
           <button
             onClick={() => addQuestion("multi")}
             className=" questionbutton
-              px-15 py-10
+              px-8 py-4
               rounded-full 
               background-color-primary-main 
               text-white 
@@ -128,7 +177,7 @@ export default function CeateForms() {
           <button
             onClick={() => addQuestion("open")}
             className=" questionbutton
-              px-15 py-10
+              px-8 py-4
               rounded-full 
               background-color-primary-main 
               text-white 
@@ -139,7 +188,7 @@ export default function CeateForms() {
           <button
             onClick={submitSurvey}
             className="questionbutton
-              px-15 py-10
+              px-8 py-4
               rounded-full 
               background-color-primary-main 
               text-white 
@@ -150,42 +199,63 @@ export default function CeateForms() {
           </button>
         </div>
         <div className="space-y-8">
-          {questions.map((q) => {
-            switch (q.type) {
-              case "open":
-                return (
-                  <OpenQuestion
-                    key={q.id}
-                    onDelete={() => deleteQuestion(q.id)}
-                    value={q.text || ''}
-                    onChange={text => handleQuestionChange(q.id, { text })}
-                  />
-                );
-              case "single":
-                return (
-                  <SingleChoiceQuestion
-                    key={q.id}
-                    onDelete={() => deleteQuestion(q.id)}
-                    value={q.text || ''}
-                    onChange={text => handleQuestionChange(q.id, { text })}
-                    answers={q.answers || []}
-                    onAnswersChange={answers => handleAnswersChange(q.id, answers)}
-                  />
-                );
-              case "multi":
-                return (
-                  <MultiChoiceQuestion
-                    key={q.id}
-                    onDelete={() => deleteQuestion(q.id)}
-                    value={q.text || ''}
-                    onChange={text => handleQuestionChange(q.id, { text })}
-                    answers={q.answers || []}
-                    onAnswersChange={answers => handleAnswersChange(q.id, answers)}
-                  />
-                );
-              default:
-                return null;
-            }
+          {questions.map((q, index) => {
+            const isHovered = dragOverItem === index && draggedItem !== null && draggedItem !== index;
+            return (
+              <div
+                key={q.id}
+                className="relative flex items-start"
+                style={isHovered ? {
+                  backgroundColor: 'rgba(235, 179, 193, 0.3)',
+                  transition: 'background-color 0.2s ease',
+                  borderRadius: '16px',
+                  padding: '8px'
+                } : {}}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+              >
+                <DragHandle />
+                <div className="flex-1">
+                  {(() => {
+                  switch (q.type) {
+                    case "open":
+                      return (
+                        <OpenQuestion
+                          onDelete={() => deleteQuestion(q.id)}
+                          value={q.text || ''}
+                          onChange={text => handleQuestionChange(q.id, { text })}
+                        />
+                      );
+                    case "single":
+                      return (
+                        <SingleChoiceQuestion
+                          onDelete={() => deleteQuestion(q.id)}
+                          value={q.text || ''}
+                          onChange={text => handleQuestionChange(q.id, { text })}
+                          answers={q.answers || []}
+                          onAnswersChange={answers => handleAnswersChange(q.id, answers)}
+                        />
+                      );
+                    case "multi":
+                      return (
+                        <MultiChoiceQuestion
+                          onDelete={() => deleteQuestion(q.id)}
+                          value={q.text || ''}
+                          onChange={text => handleQuestionChange(q.id, { text })}
+                          answers={q.answers || []}
+                          onAnswersChange={answers => handleAnswersChange(q.id, answers)}
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                })()}
+                </div>
+              </div>
+            );
           })}
         </div>
       </div>

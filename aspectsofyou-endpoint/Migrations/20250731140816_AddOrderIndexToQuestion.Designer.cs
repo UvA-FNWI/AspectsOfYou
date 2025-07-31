@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UvA.AspectsOfYou.Endpoint.Entities;
@@ -11,9 +12,11 @@ using UvA.AspectsOfYou.Endpoint.Entities;
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
     [DbContext(typeof(AspectContext))]
-    partial class AspectContextModelSnapshot : ModelSnapshot
+    [Migration("20250731140816_AddOrderIndexToQuestion")]
+    partial class AddOrderIndexToQuestion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

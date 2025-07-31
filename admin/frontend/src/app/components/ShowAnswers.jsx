@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ShowCircle from './ShowCircle';
 import ShowBarplot from './ShowBarplot';
+import ShowWordCloudQuestion from './ShowWordCloudQuestion';
 
 export default function ShowAnswers({ survey }) {
   const style = {
@@ -66,15 +67,14 @@ export default function ShowAnswers({ survey }) {
   );
 
   return (
-    <div className="grid grid-cols-2 gap-x-64 gap-y-16">
+    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
       {questions.map((question, index) => {
         const currentView = viewType[question.questionId] || 'circle';
         const isHovered = dragOverItem === index && draggedItem !== null && draggedItem !== index;
-        
         return (
           <div
             key={question.questionId}
-            className={`rounded-2xl p-8 flex flex-col items-center bg-white relative ${
+            className={`rounded-2xl p-4 flex flex-col items-center bg-white relative ${
                       currentView === 'exclude' ? 'invisible_select' : ''
                     }`}
             style={currentView === 'exclude' ? {
@@ -100,10 +100,13 @@ export default function ShowAnswers({ survey }) {
             >
               <option value="circle">Circle</option>
               <option value="barplot">Barplot</option>
+              <option value="wordcloud">Word Cloud</option>
               <option value="exclude">Exclude from PDF</option>
             </select>
             {currentView === 'circle' ? (
               <ShowCircle question={question} />
+            ) : currentView === 'wordcloud' ? (
+              <ShowWordCloudQuestion question={question} />
             ) : (
               <ShowBarplot question={question} />
             )}

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import ShowAnswers from '../../components/ShowAnswers';
 import ImageRow from '@/app/components/ImageRow';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 export default function SurveyPage({ params }) {
   const [survey, setSurvey] = useState(null);
@@ -123,18 +123,18 @@ export default function SurveyPage({ params }) {
       >
         Download as PDF
       </button>
-      <div className="survey-content max-w-2xl">
+      <div className="survey-content">
         {isEditing ? (
           <input
             type="text"
             value={title}
             onChange={handleTitleChange}
             onBlur={handleBlur}
-            className="text-2xl font-bold mb-6 border border-gray-300 rounded px-2 py-1"
+            className="text-4xl font-bold mb-6 border border-gray-300 rounded px-2 py-1 text-center"
           />
         ) : (
           <h1
-            className="text-2xl font-bold mb-6"
+            className="text-4xl font-bold mb-6 text-center"
             onDoubleClick={handleDoubleClick}
           >
             {title}

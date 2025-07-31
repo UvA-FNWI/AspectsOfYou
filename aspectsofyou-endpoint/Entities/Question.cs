@@ -10,6 +10,9 @@ public class Question
     // 0 -> multiple choice (1 answer), 1-> multiple choice (multiple answers)
     // 2-> open question
     public int QuestionType{ get; set; }
+    
+    // Order of the question in the survey
+    public int OrderIndex { get; set; }
 
     //relations to other tables
     public Guid SurveyId { get; set; }
