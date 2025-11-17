@@ -1,5 +1,9 @@
 'use client';
 
+/*
+Models one question with different answers (thus refers to openanswer or answer)
+*/
+
 import { useState, forwardRef, useImperativeHandle } from 'react';
 import Answer from './Answer';
 import OpenAnswer from './OpenAnswer';

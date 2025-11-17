@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchSurveys() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys`);
 
         if (!response.ok) {
@@ -33,7 +33,7 @@ export default function Home() {
 
   const deleteSurvey = async (surveyId) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/surveys/delete/${surveyId}`, {
         method: 'DELETE',
       });

@@ -8,42 +8,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
-      - DOTNET_API_URL=http://aspectsofyou-endpoint:80
-    depends_on:
-      - backend
-    networks:
-      - forms-network
-
-  backend:
-    build:
-      context: ./forms/backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
       - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
     depends_on:
       - aspectsofyou-endpoint
     networks:
       - forms-network
-      - aspectsofyou-network
-
-  admin-backend:
-    build:
-      context: ./admin/backend
-      dockerfile: Dockerfile
-    ports:
-      - "3002:3001"
-    environment:
-      - PORT=3001
-      - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
-    depends_on:
-      - aspectsofyou-endpoint
-    networks:
-      - forms-network
-      - aspectsofyou-network
 
   admin-frontend:
     build:
@@ -54,7 +23,7 @@ services:
     environment:
       - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
     depends_on:
-      - admin-backend
+      - aspectsofyou-endpoint
     networks:
       - forms-network
 

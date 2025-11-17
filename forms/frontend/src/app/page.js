@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+/*
+Overview page, which links to all other surveys
+*/
+
 export default function Home() {
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,14 +14,14 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchSurveys() {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      try { // fetch all surveys
+        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch surveys');
         }
-        
+
         const data = await response.json();
         setSurveys(data);
       } catch (err) {
@@ -27,7 +31,6 @@ export default function Home() {
         setLoading(false);
       }
     }
-    
     fetchSurveys();
   }, []);
 
@@ -52,7 +55,6 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">Available Surveys</h1>
-      
       {surveys.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-600">No surveys are currently available.</p>
@@ -60,7 +62,7 @@ export default function Home() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {surveys.map((survey) => (
-            <Link 
+            <Link
               key={survey.surveyId}
               href={`/survey/${survey.surveyId}`}
               className="block bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"

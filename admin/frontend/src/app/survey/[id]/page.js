@@ -7,6 +7,26 @@ import ImageRow from '@/app/components/ImageRow';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 
+function regroupByQuestion(responses) {
+  const grouped = {};
+
+  responses.forEach(item => {
+    const { questionId, questionText, answerId, answerText, count } = item;
+
+    if (!grouped[questionId]) {
+      grouped[questionId] = {
+        questionId,
+        questionText,
+        answers: []
+      };
+    }
+
+    grouped[questionId].answers.push({ answerId, answerText, count });
+  });
+
+  return Object.values(grouped);
+}
+
 export default function SurveyPage({ params }) {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,43 +35,31 @@ export default function SurveyPage({ params }) {
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
 
-  const dev = true
-  
   const { id } = params;
-  
+
   useEffect(() => {
     async function fetchSurvey() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
-        const response = await fetch(`${apiUrl}/api/surveys/${id}/answers`);
-        console.log(response);
+        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const response = await fetch(`${apiUrl}/api/surveys/${id}/responseCounts`);
+
+        const counts = await response.json();
+        console.log(counts);
         if (!response.ok) {
           throw new Error('Failed to fetch survey');
         }
-        const data = await response.json();
-        setSurvey(data);
+        const transformedData = regroupByQuestion(counts);
+        setSurvey(transformedData);
 
-        console.log(data);
+        console.log(transformedData);
       } catch (err) {
-        if (dev) {
-          console.warn('Fetch failed, loading local testanswer.json as fallback');
-          try {
-              const localData = await fetch('/testanswer.json');
-              const json = await localData.json();
-              setSurvey(json);
-            } catch (jsonErr) {
-              console.error('Error loading local testanswer.json:', jsonErr);
-              setError('Failed to load fallback survey data.');
-          }
-        } else {
-          console.error('Error fetching survey:', err);
-          setError('Failed to load the survey. Please try again later.');
-        }
+        console.error('Error fetching survey:', err);
+        setError('Failed to load the survey. Please try again later.');
       } finally {
         setLoading(false);
       }
     }
-    
+
     fetchSurvey();
   }, [id]);
 

@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 
+/*
+Open-ended individual questions get put here
+*/
+
 export default function OpenAnswer({
   answer,
   extraTextValue = '',

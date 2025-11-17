@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
+/*
+Models one option for multi- or single- choice questions
+*/
 export default function Answer({ 
   answer, 
   isSelected, 

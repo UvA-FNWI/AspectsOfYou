@@ -1,5 +1,8 @@
 'use client';
 
+/*
+This object keeps track of the current state of the survey, and loads the questions one by one
+*/
 import { useState, useRef, useEffect } from 'react';
 import Question from './Question';
 

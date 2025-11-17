@@ -9,19 +9,20 @@ export default function SurveyPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const router = useRouter();
-  
+
   const { id } = params;
-  
+
   useEffect(() => {
     async function fetchSurvey() {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      console.log(id)
+      try { // Fetches questions from the survey
+        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys/${id}`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch survey');
         }
-        
+
         const data = await response.json();
         setSurvey(data);
       } catch (err) {
@@ -35,37 +36,72 @@ export default function SurveyPage({ params }) {
     fetchSurvey();
   }, [id]);
 
-  // Handle submission of each individual answer
+  // Handle submission of each individual answer such that we cannot seperate users
   const uploadAnswerToDatabase = async (questionId, answer) => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/answers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          surveyId: id,
-          questionId,
-          answer,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to submit answer');
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      throw error;
+    const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+
+    console.log(id)
+
+    // If multiple answers are submitted (multiple choice), upload them all individually, such that we cannot link users
+    if (Array.isArray(answer)) {
+      const responses = await Promise.all(
+        answer.map(async ans => {
+          const responseDto = {
+            surveyId: id,
+            questionId: questionId,
+            answerId: ans.answerId,
+            additional: ans.extraText || null
+          };
+
+          console.log(responseDto)
+
+          console.log('Submitting response to .NET API:', responseDto);
+
+          const response = await fetch(`${apiUrl}/api/responses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(responseDto),
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to submit answer: ${response.statusText}\n${text}`);
+          }
+
+          return response.json();
+        })
+      );
+      return;
+    }
+
+    // only one question submitted
+    const responseDto = {
+      surveyId: id,
+      questionId: questionId,
+      answerId: answer.answerId || answer.selectedAnswer?.answerId,
+      additional: answer.extraText || answer.selectedAnswer?.extraText || null
+    };
+
+    console.log('Submitting response to .NET API:', responseDto);
+
+    const response = await fetch(`${apiUrl}/api/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(responseDto),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to submit answer: ${response.statusText}`);
     }
   };
-  
-  // Handle survey completion
-  const handleSurveyComplete = (allAnswers) => {
-    // Navigate to a thank you page or show completion message
+
+  // Handle survey completion, navigates to complete server
+  const handleSurveyComplete = (_) => {
     router.push(`/survey/${id}/thanks`);
   };
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -4,9 +4,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>aec06473-bcd2-4482-947e-1e9cf8bd9fbd</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
+        <RuntimeHostConfigurationOption Include="ConnectionStrings:AspectContext" Value="Host=localhost;Database=aspects;Username=strawberry;Password=strawberry;" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
           <PrivateAssets>all</PrivateAssets>
