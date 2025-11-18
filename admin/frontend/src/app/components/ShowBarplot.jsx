@@ -3,6 +3,10 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { ThemeProvider } from '@mui/material/styles';
 import uvaTheme from './theme';
 
+/*
+Displays one question as a bar plot
+*/
+
 export default function ShowBarplot({ question }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);

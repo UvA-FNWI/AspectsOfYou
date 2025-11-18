@@ -1,5 +1,9 @@
 'use client';
 
+/*
+The page where the visualization of a single survey is shown
+*/
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ShowAnswers from '../../components/ShowAnswers';
@@ -39,6 +43,7 @@ export default function SurveyPage({ params }) {
 
   useEffect(() => {
     async function fetchSurvey() {
+      // Gets grouped answers per question
       try {
         const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys/${id}/responseCounts`);
@@ -76,6 +81,7 @@ export default function SurveyPage({ params }) {
   };
 
   const handleDownloadPDF = async () => {
+    // Downloads all 'visible' components in a PDF
     const element = document.querySelector('.survey-content');
     const canvas = await html2canvas(element, {
       ignoreElements: (el) =>
@@ -148,8 +154,8 @@ export default function SurveyPage({ params }) {
             {title}
           </h1>
         )}
-        <ShowAnswers survey={survey} />
-        <ImageRow />
+        <ShowAnswers survey={survey} /> {/* Shows the answers of the individual questions */}
+        <ImageRow /> {/* Shows the logos */}
       </div>
     </div>
   );

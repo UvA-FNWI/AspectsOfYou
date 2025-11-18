@@ -1,5 +1,9 @@
 import React from "react";
 
+/*
+Creation of one multiple choice question
+*/
+
 export default function MultiChoiceQuestion({
   value,
   onChange,

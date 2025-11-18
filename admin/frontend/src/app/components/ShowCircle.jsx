@@ -3,6 +3,9 @@ import { PieChart } from '@mui/x-charts/PieChart'
 import { ThemeProvider } from '@mui/material/styles';
 import uvaTheme from './theme';
 
+/*
+Displays one question as a circle plot
+*/
 
 export default function ShowCircle({ question }) {
   const [title, setTitle] = React.useState(question.questionText);

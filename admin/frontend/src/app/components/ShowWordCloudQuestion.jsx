@@ -2,6 +2,10 @@ import * as React from 'react';
 import * as d3 from 'd3';
 import cloud from 'd3-cloud';
 
+/*
+Displays one question as a word cloud
+*/
+
 export default function ShowWordCloudQuestion({ question }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);

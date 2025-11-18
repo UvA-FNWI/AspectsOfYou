@@ -1,5 +1,9 @@
 'use client';
 
+/*
+Creation of one form
+*/
+
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import OpenQuestion from "../components/OpenQuestion";
@@ -74,6 +78,7 @@ export default function CeateForms() {
       return;
     }
 
+    // Allow two questions to be swapped
     const newQuestions = [...questions];
     const draggedQuestion = newQuestions[draggedItem];
 
@@ -105,7 +110,7 @@ export default function CeateForms() {
   };
 
   const submitSurvey = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+    const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
     const surveyData = {
       title: formTitle,
       questions: questions.map(q => ({

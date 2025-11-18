@@ -3,15 +3,19 @@ import ShowCircle from './ShowCircle';
 import ShowBarplot from './ShowBarplot';
 import ShowWordCloudQuestion from './ShowWordCloudQuestion';
 
+/*
+Main component for one question: loads the questions and shows the answers
+*/
+
 export default function ShowAnswers({ survey }) {
   const style = {
     justifyContent: 'space-evenly',
     display: 'flex'
   };
 
-  const [viewType, setViewType] = useState('circle');
+  const [viewType, setViewType] = useState('circle'); // As which type the question should be displayed
   const [questions, setQuestions] = useState(survey);
-  const [draggedItem, setDraggedItem] = useState(null);
+  const [draggedItem, setDraggedItem] = useState(null); // Two states to allow the components to be dragged and swapped
   const [dragOverItem, setDragOverItem] = useState(null);
 
   const handleViewChange = (questionId, type) => {
@@ -41,6 +45,7 @@ export default function ShowAnswers({ survey }) {
       return;
     }
 
+    // Swap the two questions
     const newQuestions = [...questions];
     const draggedQuestion = newQuestions[draggedItem];
 
@@ -54,7 +59,7 @@ export default function ShowAnswers({ survey }) {
   };
 
   const DragHandle = () => (
-    <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing p-4">
+    <div className={`absolute top-2 left-2 cursor-grab active:cursor-grabbing p-4 invisible_select`}>
       <div className="grid grid-cols-2 gap-1 w-4 h-3">
         {[...Array(6)].map((_, i) => (
           <div
@@ -68,7 +73,7 @@ export default function ShowAnswers({ survey }) {
 
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-      {questions.map((question, index) => {
+      {questions.map((question, index) => { // for each question:
         const currentView = viewType[question.questionId] || 'circle';
         const isHovered = dragOverItem === index && draggedItem !== null && draggedItem !== index;
         return (
@@ -97,7 +102,7 @@ export default function ShowAnswers({ survey }) {
               onChange={(e) => handleViewChange(question.questionId, e.target.value)}
               value={currentView}
               className="mb-4 border border-gray-300 rounded px-2 py-1 ml-8"
-            >
+            > {/* All different displayoptions */}
               <option value="circle">Circle</option>
               <option value="barplot">Barplot</option>
               <option value="wordcloud">Word Cloud</option>

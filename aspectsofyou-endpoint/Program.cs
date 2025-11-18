@@ -292,8 +292,6 @@ app.MapGet("/api/surveys/{surveyId}/responseCounts", async (AspectContext db, Gu
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
 /*
-TODO: fix
-
 Deletes a survey from the database
 */
 app.MapDelete("/api/surveys/delete/{id}", async (AspectContext db, Guid id) =>
@@ -315,20 +313,19 @@ app.MapDelete("/api/surveys/delete/{id}", async (AspectContext db, Guid id) =>
     Console.WriteLine($"Found survey with ID {id}. Deleting related entities...");
 
     // Remove related responses
-    // db.Responses.RemoveRange(survey.Responses);
+    db.Responses.RemoveRange(survey.Responses);
 
-    // // Remove related questions and their answers
-    // foreach (var question in survey.Questions)
-    // {
-    //     db.Answers.RemoveRange(question.Answers);
-    //     db.Questions.Remove(question);
-    // }
+    // Remove related questions and their answers
+    foreach (var question in survey.Questions)
+    {
+        db.Answers.RemoveRange(question.Answers);
+        db.Questions.Remove(question);
+    }
 
     // Remove the survey itself
     db.Surveys.Remove(survey);
     await db.SaveChangesAsync();
 
-    // Console.WriteLine($"Successfully deleted survey with ID {id}.");
     return Results.NoContent();
 });
 

@@ -1,5 +1,10 @@
 import React from "react";
 
+/*
+Creation of one single choice question
+*/
+
+
 export default function SingleChoiceQuestion({
   value,
   onChange,

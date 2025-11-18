@@ -1,5 +1,9 @@
 import React from "react";
 
+/*
+Creation of one open question
+*/
+
 export default function OpenQuestion({ value, onChange, onDelete }) {
   return (
     <div className="relative group border border-[#CF202E] rounded-lg p-4 bg-[#FFF5F5]">
