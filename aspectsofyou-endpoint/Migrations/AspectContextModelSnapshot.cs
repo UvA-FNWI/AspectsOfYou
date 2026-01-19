@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UvA.AspectsOfYou.Endpoint.Entities;
+using System.Collections.Generic;
 
 #nullable disable
 
@@ -109,6 +110,12 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Editing")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Live")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -138,6 +145,113 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewAnswerOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("AnswerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ViewQuestionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnswerId");
+
+                    b.HasIndex("ViewQuestionId");
+
+                    b.ToTable("ViewAnswerOptions");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ExcludedAnswerIds")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExcludedResponseIds")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsExcludedFromView")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("OrderingId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ViewSurveyId")
+                        .HasColumnType("integer");
+
+                    b.Property<List<string>>("ViewType")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("ViewSurveyId");
+
+                    b.ToTable("ViewQuestions");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewSurvey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("FunkyBackground")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("FunkyColors")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("FunkyFont")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("SurveyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SurveyId");
+
+                    b.ToTable("ViewSurveys");
                 });
 
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Answer", b =>
@@ -189,6 +303,55 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.Navigation("Survey");
                 });
 
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewAnswerOption", b =>
+                {
+                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.Answer", "Answer")
+                        .WithMany()
+                        .HasForeignKey("AnswerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.ViewQuestion", "ViewQuestion")
+                        .WithMany("ViewAnswerOptions")
+                        .HasForeignKey("ViewQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Answer");
+
+                    b.Navigation("ViewQuestion");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewQuestion", b =>
+                {
+                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.ViewSurvey", "ViewSurvey")
+                        .WithMany("ViewQuestions")
+                        .HasForeignKey("ViewSurveyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("ViewSurvey");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewSurvey", b =>
+                {
+                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.Survey", "Survey")
+                        .WithMany()
+                        .HasForeignKey("SurveyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Survey");
+                });
+
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Answer", b =>
                 {
                     b.Navigation("Responses");
@@ -206,6 +369,16 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.Navigation("Questions");
 
                     b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewQuestion", b =>
+                {
+                    b.Navigation("ViewAnswerOptions");
+                });
+
+            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.ViewSurvey", b =>
+                {
+                    b.Navigation("ViewQuestions");
                 });
 #pragma warning restore 612, 618
         }

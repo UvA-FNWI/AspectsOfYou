@@ -20,7 +20,7 @@ const ImageRow = () => {
   return (
     <div style={containerStyle}>
       <img
-        src="/uvalogo.jpg"
+        src="/uvalogo.png"
         alt="First"
         style={imageStyle}
       />

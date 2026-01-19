@@ -8,6 +8,10 @@ public class Survey
 
     public string Title {get; set; }
 
+    public bool Live { get; set; } = false;
+
+    public bool Editing { get; set; } = true;
+
     //relations to other tables
     public ICollection<Response> Responses { get; set; } = new List<Response>();
     public ICollection<Question> Questions { get; set; } = new List<Question>();

@@ -8,4 +8,5 @@ public class ResponseDto
     public Guid SurveyId { get; set; }
     public Guid QuestionId { get; set; }
     public Guid AnswerId { get; set; }
+    public int QuestionType { get; set; }
 } 

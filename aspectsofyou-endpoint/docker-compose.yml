@@ -13,7 +13,7 @@ services:
       - aspectsofyou-network
 
   postgres:
-    image: postgres:latest
+    image: postgres:17
     environment:
       - POSTGRES_USER=strawberry
       - POSTGRES_PASSWORD=strawberry

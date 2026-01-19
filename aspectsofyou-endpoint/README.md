@@ -28,7 +28,7 @@ Below are the DTOs exposed/consumed by the endpoints (property types shown):
 
 - `CreateQuestionDto`
 	- `QuestionText : string`
-	- `QuestionType : int` (0 = single choice, 1 = multiple choice, 2 = open-ended)
+	- `QuestionType : int` (0 = single choice, 1 = multiple choice, 2 = open-ended, 3 = geo region)
 	- `Answers : List<CreateAnswerDto>`
 
 - `QuestionDto`
@@ -64,6 +64,7 @@ Below are the DTOs exposed/consumed by the endpoints (property types shown):
 - `ResponseCountDto` (aggregation shape returned by responseCounts)
 	- `QuestionId : Guid`
 	- `QuestionText : string`
+	- `QuestionType : int`
 	- `AnswerId : Guid` (for open-ended answers this will be `00000000-0000-0000-0000-000000000000`)
 	- `AnswerText : string` (or response text for open questions)
 	- `Count : int`
