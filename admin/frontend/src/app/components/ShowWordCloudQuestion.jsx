@@ -21,7 +21,7 @@ const palettes = {
 Displays one question as a word cloud
 */
 
-export default function ShowWordCloudQuestion({ question, onTitleChange, readOnly = false, onOpenResponses, colorScheme = 'uva', hideTitle = false, chartFontSize }) {
+export default function ShowWordCloudQuestion({ question, onTitleChange, readOnly = false, onOpenResponses, colorScheme = 'uva', hideTitle = false }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);
   const svgRef = React.useRef();
@@ -29,7 +29,7 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
   const [dims, setDims] = React.useState({ width: 0, height: 0 });
   const colors = palettes[colorScheme] || palettes.uva;
 
-  // Track container size so the cloud fills its cell
+  // Track container size so the cloud fills its cell (same pattern as other charts)
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -65,46 +65,66 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
 
     d3.select(svgRef.current).selectAll("*").remove();
 
-    const words = question.answers.map((answer) => ({
+    const inputWords = question.answers.map((answer) => ({
       text: answer.answerText,
       count: parseInt(answer.count, 10)
     }));
 
-    const maxResponses = Math.max(...words.map(w => w.count));
-
-    const maxFontSize = chartFontSize ? Math.round(72 * chartFontSize / 13) : 72;
-    const minFontSize = chartFontSize ? Math.round(16 * chartFontSize / 13) : 16;
-
-    // dynamic styling
-    words.forEach(word => {
-      const relativeSize = word.count / maxResponses;
-      word.size = Math.max(minFontSize, Math.min(maxFontSize, minFontSize + (relativeSize * 32)));
-    });
+    const maxResponses = Math.max(...inputWords.map(w => w.count));
+    const totalWords = inputWords.length;
 
     const width = dims.width;
-    const height = dims.height;
+    // Cap height at width so the cloud is at most square (helps on mobile)
+    const height = Math.min(dims.height, dims.width);
 
     const colorScale = d3.scaleOrdinal(colors);
 
-    const layout = cloud()
-      .size([width, height])
-      .words(words)
-      .padding(5)
-      .rotate(() => ~~(Math.random() * 2) * 90)
-      .font("Impact")
-      .fontSize((d) => d.size)
-      .on("end", draw);
+    // Try placing all words, reducing font scale until they all fit
+    function attempt(scaleFactor) {
+      const maxFontSize = Math.round(72 * scaleFactor);
+      const minFontSize = Math.max(6, Math.round(16 * scaleFactor));
+      const fontRange = maxFontSize - minFontSize;
 
-    layout.start();
+      const words = inputWords.map(w => ({
+        ...w,
+        size: Math.max(minFontSize, Math.min(maxFontSize, minFontSize + ((w.count / maxResponses) * fontRange))),
+      }));
 
-    function draw(words) {
+      return new Promise((resolve) => {
+        cloud()
+          .size([width, height])
+          .words(words)
+          .padding(4)
+          .rotate(() => ~~(Math.random() * 2) * 90)
+          .font("Impact")
+          .fontSize((d) => d.size)
+          .on("end", (placed) => resolve({ placed, scaleFactor }))
+          .start();
+      });
+    }
+
+    // Try progressively smaller fonts until all words fit (max 5 attempts)
+    async function run() {
+      let scale = 1;
+      for (let i = 0; i < 5; i++) {
+        const { placed } = await attempt(scale);
+        if (placed.length >= totalWords || scale <= 0.3) {
+          draw(placed, width, height);
+          return;
+        }
+        scale *= 0.7;
+      }
+      // Last resort: draw whatever we got
+      const { placed } = await attempt(scale);
+      draw(placed, width, height);
+    }
+
+    function draw(words, w, h) {
       d3.select(svgRef.current).selectAll("*").remove();
-      const svg = d3.select(svgRef.current)
-        .attr("width", width)
-        .attr("height", height);
 
-      const g = svg.append("g")
-        .attr("transform", `translate(${width/2},${height/2})`);
+      const g = d3.select(svgRef.current)
+        .append("g")
+        .attr("transform", `translate(${w/2},${h/2})`);
 
       g.selectAll("text")
         .data(words)
@@ -130,6 +150,8 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
         .append("title")
         .text((d) => `${d.text}: ${d.count} responses`);
     }
+
+    run();
   }, [question.answers, dims, colors]);
 
   return (
@@ -156,12 +178,14 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
       )}
       <div
         ref={containerRef}
-        className={`w-full flex-1 ${hideTitle ? 'min-h-0 h-full' : 'min-h-[200px]'}`}
+        className={`w-full flex-1 flex items-center justify-center ${hideTitle ? 'min-h-0 h-full' : 'min-h-[300px]'}`}
       >
         <svg
           ref={svgRef}
           className="cursor-pointer block"
-          style={{ width: dims.width || '100%', height: dims.height || '100%' }}
+          viewBox={dims.width ? `0 0 ${dims.width} ${Math.min(dims.height, dims.width)}` : undefined}
+          preserveAspectRatio="xMidYMid meet"
+          style={{ width: '100%', maxHeight: '100%' }}
           onClick={() => {
             if (!readOnly && onOpenResponses) {
               onOpenResponses(question);

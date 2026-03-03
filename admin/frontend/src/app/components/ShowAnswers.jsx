@@ -222,10 +222,15 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
     return () => ro.disconnect();
   }, [fillHeight]);
 
+  // Total "slots" — each question with n views counts as n slots
+  const totalSlots = useMemo(() => {
+    return renderedQuestions.reduce((sum, q) => sum + getViewListForQuestion(q).length, 0);
+  }, [renderedQuestions, viewTypes]);
+
   // Compute the column count that maximises per-cell area for the viewport
   const optimalCols = useMemo(() => {
     if (!fillHeight) return 1;
-    const n = renderedQuestions.length;
+    const n = totalSlots;
     if (n === 0) return 1;
     const { width: W, height: H } = containerDims;
     if (W === 0 || H === 0) return Math.ceil(Math.sqrt(n));
@@ -243,13 +248,15 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
       }
     }
     return bestCols;
-  }, [fillHeight, renderedQuestions.length, containerDims]);
+  }, [fillHeight, totalSlots, containerDims]);
 
   // Discrete chart font-size tiers based on viewport width
   const [chartFontSize, setChartFontSize] = useState(13);
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     function updateFontTier() {
       const w = window.innerWidth;
+      setIsMobile(w < 1024);
       if (w >= 3000) setChartFontSize(24);
       else if (w >= 2400) setChartFontSize(20);
       else if (w >= 1800) setChartFontSize(17);
@@ -287,13 +294,25 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
   }, [renderedQuestions, viewTypes, readOnly, fillHeight]);
 
   const rootClass = fillHeight
-    ? 'w-full h-full grid items-stretch gap-2'
+    ? 'w-full h-full grid gap-2'
     : 'flex flex-wrap justify-center items-center gap-3 w-full';
-  const fillRows = fillHeight ? Math.ceil(renderedQuestions.length / optimalCols) : 1;
+  const effectiveCols = isMobile ? 1 : optimalCols;
+  const fillRows = fillHeight ? Math.ceil(totalSlots / effectiveCols) : 1;
+  // Each row gets at most its fair share of the container height. Rows shrink
+  // to their content when smaller, so there's no extra whitespace between
+  // titles and charts. align-content centers the whole block vertically.
+  const gap = 8; // gap-2 = 0.5rem = 8px
+  const maxRowHeight = fillHeight && containerDims.height > 0
+    ? Math.floor((containerDims.height - gap * (fillRows - 1)) / fillRows)
+    : undefined;
   const rootStyle = fillHeight
     ? {
-        gridTemplateColumns: `repeat(${optimalCols}, 1fr)`,
-        gridTemplateRows: `repeat(${fillRows}, 1fr)`,
+        gridTemplateColumns: `repeat(${effectiveCols}, 1fr)`,
+        gridTemplateRows: maxRowHeight
+          ? `repeat(${fillRows}, minmax(0, ${maxRowHeight}px))`
+          : `repeat(${fillRows}, auto)`,
+        alignContent: 'center',
+        alignItems: 'stretch',
       }
     : undefined;
 
@@ -308,15 +327,17 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
         return (
           <div
             key={question.questionId}
-            className={`rounded-2xl ${fillHeight ? 'p-1' : 'p-4'} flex flex-col items-center bg-white relative w-full flex-shrink-0 ${!readOnly ? 'border border-gray-200 shadow-sm' : ''} ${
+            className={`rounded-2xl ${fillHeight ? 'p-1' : 'p-4'} flex flex-col items-center bg-white relative w-full flex-shrink-0 border border-gray-200 shadow-sm ${
               isExcluded ? 'invisible_select' : ''
-            } ${fillHeight ? 'h-full min-h-0 max-w-none overflow-hidden' : ''} ${!fillHeight && viewList.length <= 1 ? 'max-w-[700px]' : ''}`}
+            } ${fillHeight && !isMobile ? 'h-full min-h-0 max-w-none overflow-hidden' : ''} ${!fillHeight && viewList.length <= 1 ? 'max-w-[700px]' : ''}`}
             style={{
               ...(fillHeight
-                ? { flexBasis: '100%', maxWidth: '100%' }
-                : viewList.length > 1
+                ? { gridColumn: `span ${isMobile ? 1 : viewList.length}` }
+                : isMobile
                   ? { flexBasis: '100%' }
-                  : { flexBasis: 'calc(50% - 6px)' }),
+                  : viewList.length > 1
+                    ? { flexBasis: '100%' }
+                    : { flexBasis: 'calc(50% - 6px)' }),
               ...(isExcluded
                 ? {
                     position: 'relative',
@@ -330,7 +351,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                       transition: 'background-color 0.2s ease'
                     }
                   : {}),
-              ...(maxCardHeight ? { minHeight: `${maxCardHeight}px` } : {})
+              ...(maxCardHeight && fillHeight ? { minHeight: `${maxCardHeight}px` } : {})
             }}
             ref={(el) => {
               if (el) {
@@ -405,7 +426,9 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
             <div
               className={`w-full grid ${fillHeight ? 'gap-2 flex-1 min-h-0' : 'gap-4'}`}
               style={{
-                gridTemplateColumns: `repeat(${Math.min(viewList.length, 2)}, minmax(0, 1fr))`,
+                gridTemplateColumns: isMobile
+                  ? '1fr'
+                  : `repeat(${Math.min(viewList.length, 2)}, minmax(0, 1fr))`,
                 ...(fillHeight ? { gridAutoRows: '1fr' } : {})
               }}
             >
@@ -446,7 +469,6 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                     onOpenResponses={onOpenResponses}
                     colorScheme={colorScheme}
                     hideTitle
-                    chartFontSize={fillHeight ? chartFontSize : undefined}
                   />
                 ) : (
                   <ShowBarplot
@@ -462,12 +484,12 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                 return (
                   <div
                     key={`${question.questionId}-${viewIndex}`}
-                    className={`w-full h-full min-h-0 border border-gray-200 rounded-lg ${fillHeight ? 'p-1 overflow-hidden' : 'p-3'} bg-white relative flex flex-col items-center justify-center`}
+                    className={`w-full h-full min-h-0 ${!readOnly ? 'border border-gray-200' : ''} rounded-lg ${fillHeight ? 'p-1 overflow-hidden' : 'p-3'} bg-white relative flex flex-col items-center justify-center`}
                     style={{
                       ...(viewHover ? { backgroundColor: 'rgba(235, 179, 193, 0.3)', transition: 'background-color 0.2s ease' } : {}),
-                      ...(geoWidescreen ? { gridColumn: 'span 2 / span 2' } : {}),
-                      // Center the orphan last item in a 2+1 layout (3 views, 2 columns)
-                      ...(viewList.length === 3 && viewIndex === 2 && !geoWidescreen
+                      ...(geoWidescreen && !isMobile ? { gridColumn: 'span 2 / span 2' } : {}),
+                      // Center the orphan last item in a 2+1 layout (3 views, 2 columns) — skip on mobile
+                      ...(!isMobile && viewList.length === 3 && viewIndex === 2 && !geoWidescreen
                         ? { gridColumn: '1 / -1', justifySelf: 'center', maxWidth: '50%' }
                         : {})
                     }}

@@ -10,6 +10,18 @@ import { useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../../components/ShowAnswers';
 import ImageRow from '@/app/components/ImageRow';
 
+// Hook to track lg breakpoint (1024px)
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isDesktop;
+}
+
 function regroupByQuestion(responses) {
   const grouped = {};
 
@@ -42,6 +54,7 @@ export default function SurveyPreviewPage({ params }) {
   const [funkyBgEnabled, setFunkyBgEnabled] = useState(false);
   const [funkyFontEnabled, setFunkyFontEnabled] = useState(false);
   const searchParams = useSearchParams();
+  const isDesktop = useIsDesktop();
 
   // Apply explicit preview overrides from the query string immediately
   useEffect(() => {
@@ -210,23 +223,26 @@ export default function SurveyPreviewPage({ params }) {
         <img src="/uvalogo.png" alt="UvA" className="w-auto object-contain" style={{ height: 'clamp(2rem, 3vh, 3.5rem)' }} />
       </header>
 
-      {/* Main white content area: questions + title centered, Artboard logo pinned absolute */}
-      <main className="flex-1 min-h-0 relative flex flex-col items-center justify-center px-2 sm:px-3 py-4 lg:py-2 overflow-auto lg:overflow-hidden">
-        {/* Aspects-of-You logo: absolute bottom-right, does not affect flow */}
-        <img
-          src="/Artboard4.png"
-          alt="Aspects of You"
-          className="absolute bottom-4 right-4 h-auto object-contain pointer-events-none z-10"
-          style={{ width: 'clamp(5rem, 6vw, 8rem)' }}
-        />
+      {/* Main white content area */}
+      <main className={`flex-1 min-h-0 relative flex flex-col items-center px-2 sm:px-3 py-4 lg:py-2 ${isDesktop ? 'justify-center overflow-hidden' : 'overflow-auto'}`}>
+        {/* Aspects-of-You logo: absolute on desktop, in-flow on mobile */}
+        {isDesktop && (
+          <img
+            src="/Artboard4.png"
+            alt="Aspects of You"
+            className="absolute bottom-4 right-4 h-auto object-contain pointer-events-none z-10"
+            style={{ width: 'clamp(5rem, 6vw, 8rem)' }}
+          />
+        )}
 
-        {/* Title sits just above the questions; both together are centered as a unit */}
+        {/* Title */}
         <h1
           className="font-bold text-center mb-2 flex-shrink-0"
           style={{ fontSize: 'clamp(1.5rem, 3vw, 3.5rem)' }}
         >{title}</h1>
-        {/* Mobile: natural height, scrollable. Desktop (lg+): 2/3 of main height, centered */}
-        <div className="w-full lg:h-2/3 lg:flex-shrink-0">
+
+        {/* Plots container */}
+        <div className={`w-full ${isDesktop ? 'lg:h-2/3 lg:flex-shrink-0' : ''}`}>
           <ShowAnswers
             questions={questions}
             setQuestions={null}
@@ -234,9 +250,21 @@ export default function SurveyPreviewPage({ params }) {
             setViewTypes={null}
             readOnly={true}
             colorScheme={colorScheme}
-            fillHeight
+            fillHeight={isDesktop}
           />
         </div>
+
+        {/* Aspects-of-You logo: in-flow on mobile, below plots */}
+        {!isDesktop && (
+          <div className="w-full flex justify-end mt-4 mb-2 px-4">
+            <img
+              src="/Artboard4.png"
+              alt="Aspects of You"
+              className="h-auto object-contain"
+              style={{ width: '5rem' }}
+            />
+          </div>
+        )}
       </main>
 
       {/* Dark gray footer — scales with viewport on desktop */}
