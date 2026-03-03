@@ -75,6 +75,7 @@ function CreateFormInner() {
       return {
         ...base,
         region,
+        allowMultipleSelections: !!q.allowMultipleSelections,
         answers: (q.answers || []).map((a) => ({
           text: a.answerText || "",
           extraText: false,
@@ -148,6 +149,7 @@ function CreateFormInner() {
                 ? defaultGeoAnswers
                 : undefined,
         region: type === "geo" ? "world" : undefined,
+        allowMultipleSelections: type === "geo" ? false : undefined,
       },
     ]);
     markDirty();
@@ -225,6 +227,7 @@ function CreateFormInner() {
     questions: questions.map((q, index) => ({
       questionText: q.text || "",
       questionType: QUESTION_TYPE_MAP[q.type],
+        allowMultipleSelections: q.type === "geo" ? !!q.allowMultipleSelections : QUESTION_TYPE_MAP[q.type] === 1,
       answers:
         q.type === "open"
           ? [{ answerText: "", extraText: true }]
@@ -460,6 +463,8 @@ function CreateFormInner() {
                             onChange={(text) => handleQuestionChange(q.id, { text })}
                             region={q.region || "world"}
                             onRegionChange={(region) => handleQuestionChange(q.id, { region })}
+                            allowMultipleSelections={!!q.allowMultipleSelections}
+                            onAllowMultipleChange={(allowMultipleSelections) => handleQuestionChange(q.id, { allowMultipleSelections })}
                             answers={q.answers || []}
                             onAnswersChange={(answers) => handleAnswersChange(q.id, answers)}
                           />

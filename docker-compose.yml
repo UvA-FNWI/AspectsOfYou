@@ -1,18 +1,4 @@
-version: '3.8'
-
 services:
-  frontend:
-    build:
-      context: ./forms/frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - DOTNET_API_URL=http://aspectsofyou-endpoint:8080
-    depends_on:
-      - aspectsofyou-endpoint
-    networks:
-      - forms-network
 
   admin-frontend:
     build:

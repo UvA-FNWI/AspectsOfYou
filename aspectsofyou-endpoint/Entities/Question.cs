@@ -10,6 +10,9 @@ public class Question
     // 0 -> multiple choice (1 answer), 1-> multiple choice (multiple answers)
     // 2 -> open question, 3 -> geo region (country selection for geocharts)
     public int QuestionType{ get; set; }
+
+    // For geo questions, allow selecting multiple countries instead of a single one
+    public bool AllowMultipleSelections { get; set; } = false;
     
     // Order of the question in the survey
     public int OrderIndex { get; set; }

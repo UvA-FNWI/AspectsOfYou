@@ -8,6 +8,8 @@ export default function GeoQuestion({
   region = 'world',
   onRegionChange,
   answers = [],
+  allowMultipleSelections = false,
+  onAllowMultipleChange,
   onAnswersChange,
   onDelete
 }) {
@@ -41,7 +43,7 @@ export default function GeoQuestion({
         className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
         title="Delete question"
       >
-        <img src="/delete.png" alt="Delete" className="h-6 w-6 cursor-pointer" />
+        <img src="/icons/trash.svg" alt="Delete" className="h-6 w-6 cursor-pointer" />
       </button>
 
       <div className="flex flex-col gap-3">
@@ -61,17 +63,28 @@ export default function GeoQuestion({
             onChange={(e) => onRegionChange(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1"
           >
-            {Object.entries(REGION_PRESETS).map(([key, preset]) => (
-              <option key={key} value={key}>
-                {preset.label}
-              </option>
-            ))}
+            {Object.entries(REGION_PRESETS)
+              .filter(([key]) => key !== 'custom')
+              .map(([key, preset]) => (
+                <option key={key} value={key}>
+                  {preset.label}
+                </option>
+              ))}
           </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={!!allowMultipleSelections}
+            onChange={() => onAllowMultipleChange?.(!allowMultipleSelections)}
+            className="h-4 w-4"
+          />
+          <span>Allow selecting multiple countries</span>
         </label>
 
         <div className="text-sm text-gray-700">
           <p className="font-medium">{countries.length} countries added for {REGION_PRESETS[region]?.label || 'World'}.</p>
-          <p className="text-gray-600">Options stay synced to the selected region so results can drive the geo chart.</p>
           <button
             type="button"
             onClick={() => setShowList((prev) => !prev)}

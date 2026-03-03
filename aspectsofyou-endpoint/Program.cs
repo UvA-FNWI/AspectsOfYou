@@ -69,6 +69,7 @@ app.MapPost("/api/surveys", async (AspectContext db, CreateSurveyDto surveyDto) 
             QuestionId = Guid.NewGuid(),
             QuestionText = q.QuestionText,
             QuestionType = q.QuestionType,
+            AllowMultipleSelections = q.AllowMultipleSelections,
             OrderIndex = index,
             Answers = q.Answers.Select(a => new Answer
             {
@@ -86,6 +87,7 @@ app.MapPost("/api/surveys", async (AspectContext db, CreateSurveyDto surveyDto) 
     var viewSurvey = new ViewSurvey
     {
         SurveyId = survey.SurveyId,
+        ViewNumber = 1,
         Title = survey.Title,
         Description = string.Empty,
         FunkyBackground = false,
@@ -211,6 +213,7 @@ app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDt
         QuestionId = Guid.NewGuid(),
         QuestionText = q.QuestionText,
         QuestionType = q.QuestionType,
+        AllowMultipleSelections = q.AllowMultipleSelections,
         OrderIndex = index,
         SurveyId = survey.SurveyId,
         Answers = q.Answers.Select(a => new Answer
@@ -228,6 +231,7 @@ app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDt
     var viewSurvey = new ViewSurvey
     {
         SurveyId = survey.SurveyId,
+        ViewNumber = 1,
         Title = survey.Title,
         Description = string.Empty,
         FunkyBackground = false,
@@ -294,15 +298,17 @@ app.MapPost("/api/surveys/{id}/status", async (AspectContext db, Guid id, Update
     return Results.Ok(new { surveyId = survey.SurveyId, live = survey.Live, editing = survey.Editing });
 });
 
-// 2. Get view values for a survey, including questions, excluded answers, and answer views
+// 2. Get view values for a survey (returns first/default view), including questions, excluded answers, and answer views
 app.MapGet("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId) =>
 {
     var viewSurvey = await db.ViewSurveys
         .Where(vs => vs.SurveyId == surveyId)
+        .OrderBy(vs => vs.ViewNumber)
         .Select(vs => new
         {
             vs.Id,
             vs.SurveyId,
+            vs.ViewNumber,
             vs.Title,
             vs.Description,
             vs.FunkyBackground,
@@ -320,6 +326,7 @@ app.MapGet("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId
                     vq.IsExcludedFromView,
                     vq.OrderingId,
                     vq.ViewTypes,
+                    vq.RegionFilter,
                     Answers = db.ViewAnswerOptions
                         .Where(va => va.ViewQuestionId == vq.Id)
                         .Select(va => new
@@ -335,13 +342,93 @@ app.MapGet("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId
     return viewSurvey is null ? Results.NotFound() : Results.Ok(viewSurvey);
 });
 
+// Get a specific view by viewId
+app.MapGet("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectContext db, Guid surveyId, int viewId) =>
+{
+    var viewSurvey = await db.ViewSurveys
+        .Where(vs => vs.SurveyId == surveyId && vs.Id == viewId)
+        .Select(vs => new
+        {
+            vs.Id,
+            vs.SurveyId,
+            vs.ViewNumber,
+            vs.Title,
+            vs.Description,
+            vs.FunkyBackground,
+            vs.FunkyColors,
+            vs.FunkyFont,
+            Questions = db.ViewQuestions
+                .Where(vq => vq.ViewSurveyId == vs.Id)
+                .Select(vq => new
+                {
+                    vq.Id,
+                    vq.QuestionId,
+                    vq.Title,
+                    ExcludedAnswerIds = vq.ExcludedAnswerIds,
+                    ExcludedResponseIds = vq.ExcludedResponseIds,
+                    vq.IsExcludedFromView,
+                    vq.OrderingId,
+                    vq.ViewTypes,
+                    vq.RegionFilter,
+                    Answers = db.ViewAnswerOptions
+                        .Where(va => va.ViewQuestionId == vq.Id)
+                        .Select(va => new
+                        {
+                            va.Id,
+                            va.AnswerId,
+                            va.Title
+                        }).ToList()
+                }).ToList()
+        })
+        .FirstOrDefaultAsync();
+
+    return viewSurvey is null ? Results.NotFound() : Results.Ok(viewSurvey);
+});
+
+// List all views for a survey
+app.MapGet("/api/viewsurveys/{surveyId}/all", async (AspectContext db, Guid surveyId) =>
+{
+    var views = await db.ViewSurveys
+        .Where(vs => vs.SurveyId == surveyId)
+        .OrderBy(vs => vs.ViewNumber)
+        .Select(vs => new ViewSummaryDto
+        {
+            Id = vs.Id,
+            ViewNumber = vs.ViewNumber,
+            Title = vs.Title
+        })
+        .ToListAsync();
+
+    return Results.Ok(views);
+});
+
 // 3. Update the view tables for a given survey (replace all view questions and answers for a survey)
+// This endpoint updates the first/default view - kept for backwards compatibility
 app.MapPut("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId, ViewSurvey update) =>
 {
-    var viewSurvey = await db.ViewSurveys.FirstOrDefaultAsync(vs => vs.SurveyId == surveyId);
+    var viewSurvey = await db.ViewSurveys
+        .Where(vs => vs.SurveyId == surveyId)
+        .OrderBy(vs => vs.ViewNumber)
+        .FirstOrDefaultAsync();
     if (viewSurvey == null)
         return Results.NotFound();
 
+    return await UpdateViewSurvey(db, viewSurvey, update);
+});
+
+// Update a specific view by its ID
+app.MapPut("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectContext db, Guid surveyId, int viewId, ViewSurvey update) =>
+{
+    var viewSurvey = await db.ViewSurveys.FirstOrDefaultAsync(vs => vs.SurveyId == surveyId && vs.Id == viewId);
+    if (viewSurvey == null)
+        return Results.NotFound();
+
+    return await UpdateViewSurvey(db, viewSurvey, update);
+});
+
+// Helper function to update a view survey
+async Task<IResult> UpdateViewSurvey(AspectContext db, ViewSurvey viewSurvey, ViewSurvey update)
+{
     viewSurvey.Title = update.Title;
     viewSurvey.Description = update.Description;
     viewSurvey.FunkyBackground = update.FunkyBackground;
@@ -371,6 +458,7 @@ app.MapPut("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId
             ExcludedResponseIds = q.ExcludedResponseIds,
             IsExcludedFromView = q.IsExcludedFromView,
             OrderingId = q.OrderingId,
+                RegionFilter = q.RegionFilter,
                 ViewTypes = (q.ViewTypes == null || q.ViewTypes.Count == 0)
                     ? new List<string> { "circleplot" }
                     : q.ViewTypes.Take(3).ToList()
@@ -405,6 +493,104 @@ app.MapPut("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId
     }
 
     return Results.Ok();
+}
+
+// Delete a specific view
+app.MapDelete("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectContext db, Guid surveyId, int viewId) =>
+{
+    var viewSurvey = await db.ViewSurveys.FirstOrDefaultAsync(vs => vs.SurveyId == surveyId && vs.Id == viewId);
+    if (viewSurvey == null)
+        return Results.NotFound();
+
+    // Check if this is the only view for the survey
+    var viewCount = await db.ViewSurveys.CountAsync(vs => vs.SurveyId == surveyId);
+    if (viewCount <= 1)
+        return Results.BadRequest(new { message = "Cannot delete the only view for a survey" });
+
+    // Delete associated ViewQuestions and ViewAnswerOptions
+    var viewQuestions = await db.ViewQuestions.Where(vq => vq.ViewSurveyId == viewId).ToListAsync();
+    foreach (var vq in viewQuestions)
+    {
+        var viewAnswers = await db.ViewAnswerOptions.Where(va => va.ViewQuestionId == vq.Id).ToListAsync();
+        db.ViewAnswerOptions.RemoveRange(viewAnswers);
+    }
+    db.ViewQuestions.RemoveRange(viewQuestions);
+    db.ViewSurveys.Remove(viewSurvey);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { message = "View deleted successfully" });
+});
+
+// Create a new view for a survey
+app.MapPost("/api/viewsurveys/{surveyId}/new", async (AspectContext db, Guid surveyId) =>
+{
+    var survey = await db.Surveys
+        .Include(s => s.Questions)
+            .ThenInclude(q => q.Answers)
+        .FirstOrDefaultAsync(s => s.SurveyId == surveyId);
+    
+    if (survey == null)
+        return Results.NotFound(new { message = "Survey not found" });
+
+    // Get the next view number for this survey
+    var maxViewNumber = await db.ViewSurveys
+        .Where(vs => vs.SurveyId == surveyId)
+        .MaxAsync(vs => (int?)vs.ViewNumber) ?? 0;
+    var newViewNumber = maxViewNumber + 1;
+
+    // Create new view survey
+    var viewSurvey = new ViewSurvey
+    {
+        SurveyId = surveyId,
+        ViewNumber = newViewNumber,
+        Title = $"View {newViewNumber}",
+        Description = string.Empty,
+        FunkyBackground = false,
+        FunkyColors = false,
+        FunkyFont = false
+    };
+    db.ViewSurveys.Add(viewSurvey);
+    await db.SaveChangesAsync();
+
+    // Create default view questions for each question in the survey
+    foreach (var question in survey.Questions.OrderBy(q => q.OrderIndex))
+    {
+        var viewQuestion = new ViewQuestion
+        {
+            ViewSurveyId = viewSurvey.Id,
+            QuestionId = question.QuestionId,
+            Title = question.QuestionText,
+            ExcludedAnswerIds = string.Empty,
+            ExcludedResponseIds = string.Empty,
+            IsExcludedFromView = false,
+            OrderingId = question.OrderIndex,
+            ViewTypes = new List<string>
+            {
+                question.QuestionType == 3 ? "geochart" : "circleplot"
+            }
+        };
+        db.ViewQuestions.Add(viewQuestion);
+        await db.SaveChangesAsync();
+
+        foreach (var answer in question.Answers)
+        {
+            var viewAnswer = new ViewAnswerOption
+            {
+                ViewQuestionId = viewQuestion.Id,
+                AnswerId = answer.AnswerID,
+                Title = answer.AnswerText
+            };
+            db.ViewAnswerOptions.Add(viewAnswer);
+        }
+        await db.SaveChangesAsync();
+    }
+
+    return Results.Created($"/api/viewsurveys/{surveyId}/{viewSurvey.Id}", new ViewSummaryDto
+    {
+        Id = viewSurvey.Id,
+        ViewNumber = viewSurvey.ViewNumber,
+        Title = viewSurvey.Title
+    });
 });
 
 
@@ -457,6 +643,7 @@ app.MapGet("/api/surveys", async (AspectContext db) =>
                 QuestionId = q.QuestionId,
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
+                AllowMultipleSelections = q.AllowMultipleSelections,
                 OrderIndex = q.OrderIndex,
                 // adds the answers to apply to the questions DTO interface
                 Answers = q.Answers.Select(a => new AnswerDto
@@ -465,7 +652,17 @@ app.MapGet("/api/surveys", async (AspectContext db) =>
                     AnswerText = a.AnswerText,
                     ExtraText = a.ExtraText
                 }).ToList()
-            }).ToList()
+            }).ToList(),
+            // Include views for this survey
+            Views = db.ViewSurveys
+                .Where(vs => vs.SurveyId == s.SurveyId)
+                .OrderBy(vs => vs.ViewNumber)
+                .Select(vs => new ViewSummaryDto
+                {
+                    Id = vs.Id,
+                    ViewNumber = vs.ViewNumber,
+                    Title = vs.Title
+                }).ToList()
         })
         .ToListAsync();
 
@@ -494,6 +691,7 @@ app.MapGet("/api/surveys/{id}", async (AspectContext db, Guid id) =>
                 QuestionId = q.QuestionId,
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
+                AllowMultipleSelections = q.AllowMultipleSelections,
                 OrderIndex = q.OrderIndex,
                 Answers = q.Answers.Select(a => new AnswerDto
                 {
@@ -729,6 +927,129 @@ app.MapDelete("/api/surveys/delete/{id}", async (AspectContext db, Guid id) =>
     await db.SaveChangesAsync();
 
     return Results.NoContent();
+});
+
+// ==================== Display Slots API ====================
+
+// Get all display slots with their assignments
+app.MapGet("/api/displayslots", async (AspectContext db) =>
+{
+    // Ensure all 4 slots exist
+    var slotNames = new[] { "fillin", "display1", "display2", "display3" };
+    foreach (var name in slotNames)
+    {
+        if (!await db.DisplaySlots.AnyAsync(s => s.SlotName == name))
+        {
+            db.DisplaySlots.Add(new DisplaySlot { SlotName = name });
+        }
+    }
+    await db.SaveChangesAsync();
+
+    var slots = await db.DisplaySlots
+        .Select(s => new
+        {
+            s.Id,
+            s.SlotName,
+            s.SurveyId,
+            s.ViewId,
+            SurveyTitle = s.Survey != null ? s.Survey.Title : null,
+            ViewNumber = s.ViewSurvey != null ? s.ViewSurvey.ViewNumber : (int?)null,
+            ViewTitle = s.ViewSurvey != null ? s.ViewSurvey.Title : null
+        })
+        .ToListAsync();
+
+    return Results.Ok(slots);
+});
+
+// Get a specific slot by name
+app.MapGet("/api/displayslots/{slotName}", async (AspectContext db, string slotName) =>
+{
+    var slot = await db.DisplaySlots
+        .Where(s => s.SlotName == slotName)
+        .Select(s => new
+        {
+            s.Id,
+            s.SlotName,
+            s.SurveyId,
+            s.ViewId,
+            SurveyTitle = s.Survey != null ? s.Survey.Title : null,
+            ViewNumber = s.ViewSurvey != null ? s.ViewSurvey.ViewNumber : (int?)null,
+            ViewTitle = s.ViewSurvey != null ? s.ViewSurvey.Title : null
+        })
+        .FirstOrDefaultAsync();
+
+    if (slot == null)
+    {
+        // Create slot if it doesn't exist
+        var newSlot = new DisplaySlot { SlotName = slotName };
+        db.DisplaySlots.Add(newSlot);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { newSlot.Id, newSlot.SlotName, SurveyId = (Guid?)null, ViewId = (int?)null, SurveyTitle = (string?)null, ViewNumber = (int?)null, ViewTitle = (string?)null });
+    }
+
+    return Results.Ok(slot);
+});
+
+// Assign a survey/view to a slot
+app.MapPost("/api/displayslots/{slotName}", async (AspectContext db, string slotName, DisplaySlotAssignmentDto assignment) =>
+{
+    var slot = await db.DisplaySlots.FirstOrDefaultAsync(s => s.SlotName == slotName);
+    if (slot == null)
+    {
+        slot = new DisplaySlot { SlotName = slotName };
+        db.DisplaySlots.Add(slot);
+    }
+
+    // Validate that survey exists if provided
+    if (assignment.SurveyId.HasValue)
+    {
+        var surveyExists = await db.Surveys.AnyAsync(s => s.SurveyId == assignment.SurveyId.Value);
+        if (!surveyExists)
+            return Results.BadRequest(new { message = "Survey not found" });
+    }
+
+    // Validate that view exists if provided
+    if (assignment.ViewId.HasValue)
+    {
+        var viewExists = await db.ViewSurveys.AnyAsync(v => v.Id == assignment.ViewId.Value);
+        if (!viewExists)
+            return Results.BadRequest(new { message = "View not found" });
+    }
+
+    slot.SurveyId = assignment.SurveyId;
+    slot.ViewId = assignment.ViewId;
+    await db.SaveChangesAsync();
+
+    // Return the updated slot with details
+    var result = await db.DisplaySlots
+        .Where(s => s.SlotName == slotName)
+        .Select(s => new
+        {
+            s.Id,
+            s.SlotName,
+            s.SurveyId,
+            s.ViewId,
+            SurveyTitle = s.Survey != null ? s.Survey.Title : null,
+            ViewNumber = s.ViewSurvey != null ? s.ViewSurvey.ViewNumber : (int?)null,
+            ViewTitle = s.ViewSurvey != null ? s.ViewSurvey.Title : null
+        })
+        .FirstOrDefaultAsync();
+
+    return Results.Ok(result);
+});
+
+// Clear a slot
+app.MapDelete("/api/displayslots/{slotName}", async (AspectContext db, string slotName) =>
+{
+    var slot = await db.DisplaySlots.FirstOrDefaultAsync(s => s.SlotName == slotName);
+    if (slot == null)
+        return Results.NotFound();
+
+    slot.SurveyId = null;
+    slot.ViewId = null;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { message = "Slot cleared" });
 });
 
 app.Run();

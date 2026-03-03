@@ -12,7 +12,7 @@ export default function OpenQuestion({ value, onChange, onDelete }) {
         className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
         title="Delete question"
       >
-        <img src="/delete.png" alt="Delete" className="h-6 w-6 cursor-pointer" />
+        <img src="/icons/trash.svg" alt="Delete" className="h-6 w-6 cursor-pointer" />
       </button>
 
       <div

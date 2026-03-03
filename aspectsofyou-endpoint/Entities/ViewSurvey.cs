@@ -10,6 +10,10 @@ namespace UvA.AspectsOfYou.Endpoint.Entities
         public int Id { get; set; }
         [ForeignKey("Survey")]
         public Guid SurveyId { get; set; }
+        /// <summary>
+        /// The view number within a survey (1, 2, 3, etc.). Used to identify views for a single survey.
+        /// </summary>
+        public int ViewNumber { get; set; } = 1;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool FunkyBackground { get; set; } = false;

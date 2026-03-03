@@ -14,21 +14,20 @@ const Question = forwardRef(({ question }, ref) => {
   
   const [selectedAnswers, setSelectedAnswers] = useState([]);
 
+  const isGeoQuestion = question.questionType === 3;
+  const isGeoMulti = isGeoQuestion && !!question.allowMultipleSelections;
+  const isSingleChoice = question.questionType === 0 || (isGeoQuestion && !isGeoMulti);
+  const isMultiChoice = question.questionType === 1 || isGeoMulti;
+
   useImperativeHandle(ref, () => ({
     getSelectedAnswer: () => {
-      if (question.questionType === 0) {
+      if (isSingleChoice) {
         if (!selectedAnswerId) return null;
         return {
           answerId: selectedAnswerId,
           extraText: selectedAnswerExtraText
         };
-      } else if (question.questionType === 3) {
-        if (!selectedAnswerId) return null;
-        return {
-          answerId: selectedAnswerId,
-          extraText: ''
-        };
-      } else if (question.questionType === 1) {
+      } else if (isMultiChoice) {
         return selectedAnswers.length > 0 ? selectedAnswers : null;
       } else if (question.questionType === 2) {
         return selectedAnswerExtraText ? { answerId: question.answers[0].answerId, extraText: selectedAnswerExtraText } : null;
@@ -42,7 +41,7 @@ const Question = forwardRef(({ question }, ref) => {
   }));
 
   const handleAnswerSelect = (answerId, extraText = '') => {
-    if (question.questionType === 0 || question.questionType === 3) {
+    if (isSingleChoice) {
       setSelectedAnswerId(answerId);
       setSelectedAnswerExtraText(extraText);
     } else {
@@ -63,7 +62,7 @@ const Question = forwardRef(({ question }, ref) => {
   };
 
   const isAnswerSelected = (answerId) => {
-    if (question.questionType === 0) {
+    if (isSingleChoice) {
       return selectedAnswerId === answerId;
     } else {
       return selectedAnswers.some(ans => ans.answerId === answerId);
@@ -71,7 +70,7 @@ const Question = forwardRef(({ question }, ref) => {
   };
 
   const getExtraTextForAnswer = (answerId) => {
-    if (question.questionType === 0) {
+    if (isSingleChoice) {
       return selectedAnswerId === answerId ? selectedAnswerExtraText : '';
     } else {
       const answer = selectedAnswers.find(ans => ans.answerId === answerId);
@@ -79,11 +78,17 @@ const Question = forwardRef(({ question }, ref) => {
     }
   };
 
+  const sortedGeoAnswers = isGeoQuestion
+    ? [...(question.answers || [])]
+        .slice()
+        .sort((a, b) => (a.answerText || '').localeCompare(b.answerText || ''))
+    : (question.answers || []);
+
   return (
     <div className="mb-8">
       <h3 className="text-lg font-semibold mb-3">{question.questionText}</h3>
 
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
         {question.questionType === 2 ? (
           console.log(question.answers) ||
           question.answers.map((answer) => (
@@ -95,50 +100,55 @@ const Question = forwardRef(({ question }, ref) => {
               onTextChange={(text) => setSelectedAnswerExtraText(text)}
             />
           ))
-            ) : question.questionType === 3 ? (
-              <div className="flex flex-col gap-2">
-                <label className="text-sm text-gray-700">Select a country or region</label>
-                <select
-                  className="border border-gray-300 rounded px-3 py-2"
-                  value={selectedAnswerId || ''}
-                  onChange={(e) => handleAnswerSelect(e.target.value)}
-                >
-                  <option value="" disabled>Select an option</option>
-                  {[...(question.answers || [])]
-                    .slice()
-                    .sort((a, b) => (a.answerText || '').localeCompare(b.answerText || ''))
-                    .map((answer) => (
-                      <option key={answer.answerId} value={answer.answerId}>
-                        {answer.answerText}
-                      </option>
-                    ))}
-                </select>
-              </div>
-        ) : (
-          question.answers.map((answer) => (
+        ) : isGeoQuestion && isGeoMulti ? (
+          sortedGeoAnswers.map((answer) => (
             <Answer
               key={answer.answerId}
               answer={answer}
               isSelected={isAnswerSelected(answer.answerId)}
               onSelect={handleAnswerSelect}
               extraTextValue={getExtraTextForAnswer(answer.answerId)}
-              selectionType={question.questionType === 0 ? 'radio' : 'checkbox'}
+              selectionType="checkbox"
+            />
+          ))
+        ) : isGeoQuestion ? (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700">Select a country or region</label>
+            <select
+              className="border border-gray-300 rounded px-3 py-2"
+              value={selectedAnswerId || ''}
+              onChange={(e) => handleAnswerSelect(e.target.value)}
+            >
+              <option value="" disabled>Select an option</option>
+              {sortedGeoAnswers.map((answer) => (
+                <option key={answer.answerId} value={answer.answerId}>
+                  {answer.answerText}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          (question.answers || []).map((answer) => (
+            <Answer
+              key={answer.answerId}
+              answer={answer}
+              isSelected={isAnswerSelected(answer.answerId)}
+              onSelect={handleAnswerSelect}
+              extraTextValue={getExtraTextForAnswer(answer.answerId)}
+              selectionType={isSingleChoice ? 'radio' : 'checkbox'}
             />
           ))
         )}
       </div>
 
-      {question.questionType === 0 && !selectedAnswerId && (
-        <p className="text-sm text-gray-500 mt-2">Please select an answer</p>
+      {isSingleChoice && !selectedAnswerId && (
+        <p className="text-sm text-gray-500 mt-2">{isGeoQuestion ? 'Please pick a location' : 'Please select an answer'}</p>
       )}
-      {question.questionType === 1 && selectedAnswers.length === 0 && (
-        <p className="text-sm text-gray-500 mt-2">Please select one or more answers</p>
+      {isMultiChoice && selectedAnswers.length === 0 && (
+        <p className="text-sm text-gray-500 mt-2">{isGeoQuestion ? 'Please pick one or more locations' : 'Please select one or more answers'}</p>
       )}
       {question.questionType === 2 && selectedAnswerExtraText === '' && (
         <p className="text-sm text-gray-500 mt-2">Please type an answer</p>
-      )}
-      {question.questionType === 3 && !selectedAnswerId && (
-        <p className="text-sm text-gray-500 mt-2">Please pick a location</p>
       )}
     </div>
   );

@@ -19,9 +19,10 @@ const palettes = {
 Displays one question as a circle plot
 */
 
-export default function ShowCircle({ question, onTitleChange, readOnly = false, colorScheme = 'uva', hideTitle = false }) {
+export default function ShowCircle({ question, onTitleChange, readOnly = false, colorScheme = 'uva', hideTitle = false, chartFontSize }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);
+  const fontSize = chartFontSize || 13;
   const pieData = [
     ['Answer', 'Responses'],
     ...question.answers.map((answer) => [
@@ -47,7 +48,7 @@ export default function ShowCircle({ question, onTitleChange, readOnly = false, 
 
   const colors = palettes[colorScheme] || palettes.uva;
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full h-full">
       {!hideTitle && (
         readOnly ? (
           <h2 className="text-2xl font-bold mb-4 text-center">{question.questionText}</h2>
@@ -68,14 +69,14 @@ export default function ShowCircle({ question, onTitleChange, readOnly = false, 
           </h2>
         )
       )}
-      <div className="w-full min-h-[400px] h-[50vh]">
+      <div className={`w-full flex-1 ${hideTitle ? 'min-h-0 h-full' : 'min-h-[300px]'}`}>
         <Chart
           chartType="PieChart"
           width="100%"
           height="100%"
           data={pieData}
           options={{
-            legend: { position: 'bottom', alignment: 'center', textStyle: { fontSize: 13 } },
+            legend: { position: 'bottom', alignment: 'center', textStyle: { fontSize } },
             colors,
             pieSliceText: "label",
             sliceVisibilityThreshold: 0.05, // 5%

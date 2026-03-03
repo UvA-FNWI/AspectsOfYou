@@ -12,4 +12,5 @@ public class AspectContext(DbContextOptions<AspectContext> options) : DbContext(
     public DbSet<ViewSurvey> ViewSurveys { get; set; }
     public DbSet<ViewQuestion> ViewQuestions { get; set; }
     public DbSet<ViewAnswerOption> ViewAnswerOptions { get; set; }
+    public DbSet<DisplaySlot> DisplaySlots { get; set; }
 }

@@ -5,29 +5,32 @@ The page where the visualization of a single survey is shown
 */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../components/ShowAnswers';
 
 const uvaRed = '#bc0031';
 const uvaRedDark = '#840022';
 
-function ToggleSwitch({ label, checked, onChange, hidden = false }) {
+function ToggleSwitch({ label, checked, onChange, hidden = false, onLabel = 'On', offLabel = 'Off' }) {
+  // The left-side label will show the appropriate text depending on `checked` if onLabel/offLabel are supplied.
+  const leftText = (onLabel || offLabel) ? (checked ? onLabel : offLabel) : label;
+  // Switch background colors: when ON => purple (colorful), when OFF => UvA red
+  const purple = '#6b21a8';
   return (
     <div className={`${hidden ? 'sr-only' : 'flex items-center gap-2'}`}>
-      <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{label}</span>
+      <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{leftText}</span>
       <button
         type="button"
         aria-pressed={checked}
         onClick={onChange}
         className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-        style={{ backgroundColor: checked ? uvaRed : '#e5e7eb' }}
+        style={{ backgroundColor: checked ? purple : uvaRed }}
       >
         <span
           className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-1'}`}
         />
         <span className="sr-only">{label}</span>
       </button>
-      <span className="text-xs text-gray-600">{checked ? 'On' : 'Off'}</span>
     </div>
   );
 }
@@ -73,8 +76,10 @@ export default function SurveyPage({ params }) {
   const [dataInitialized, setDataInitialized] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { id } = params;
+  const viewId = searchParams.get('viewId');
 
   const markDirty = () => {
     if (dataInitialized) {
@@ -103,9 +108,13 @@ export default function SurveyPage({ params }) {
       // Gets grouped answers per question
       try {
         const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        // If viewId is provided, fetch that specific view, otherwise get the default view
+        const viewUrl = viewId 
+          ? `${apiUrl}/api/viewsurveys/${id}/view/${viewId}`
+          : `${apiUrl}/api/viewsurveys/${id}`;
         const [countsRes, viewRes] = await Promise.all([
           fetch(`${apiUrl}/api/surveys/${id}/responseCounts`),
-          fetch(`${apiUrl}/api/viewsurveys/${id}`)
+          fetch(viewUrl)
         ]);
 
         const counts = await countsRes.json();
@@ -154,6 +163,7 @@ export default function SurveyPage({ params }) {
           const excludedAnswerIds = vq?.excludedAnswerIds || '';
           const excludedResponseIds = vq?.excludedResponseIds || '';
           const isExcludedFromView = vq?.isExcludedFromView || false;
+          const regionFilter = vq?.regionFilter || null;
 
           const viewTypeListRaw = Array.isArray(vq?.viewTypes) ? vq.viewTypes : [];
           const viewTypesForQuestion = (viewTypeListRaw.length > 0 ? viewTypeListRaw : [questionType === 3 ? 'geochart' : 'circle'])
@@ -178,6 +188,7 @@ export default function SurveyPage({ params }) {
             excludedAnswerIds,
             excludedResponseIds,
             isExcludedFromView,
+            regionFilter,
             viewTypes: viewTypesForQuestion,
             answers: answersWithViewTitles
           };
@@ -237,6 +248,7 @@ export default function SurveyPage({ params }) {
 
   const handleGoToPreview = () => {
     const params = new URLSearchParams();
+    if (viewId) params.set('viewId', viewId);
     if (funkyBgEnabled) params.set('funky', '1');
     if (colorScheme === 'funky') params.set('palette', 'funky');
     if (funkyFontEnabled) params.set('font', 'funky');
@@ -373,6 +385,7 @@ export default function SurveyPage({ params }) {
             excludedResponseIds: q.excludedResponseIds || '',
             isExcludedFromView: !!q.isExcludedFromView,
             orderingId: index,
+            regionFilter: q.regionFilter || null,
             viewTypes: safeList,
             viewAnswerOptions: q.answers.map((a) => ({
               answerId: a.answerId,
@@ -382,7 +395,11 @@ export default function SurveyPage({ params }) {
         })
       };
 
-      const response = await fetch(`${apiUrl}/api/viewsurveys/${id}`, {
+      // If viewId is provided, save to that specific view, otherwise save to default
+      const saveUrl = viewId
+        ? `${apiUrl}/api/viewsurveys/${id}/view/${viewId}`
+        : `${apiUrl}/api/viewsurveys/${id}`;
+      const response = await fetch(saveUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -463,59 +480,63 @@ export default function SurveyPage({ params }) {
         fontFamily: funkyFontEnabled ? 'Arial, sans-serif' : undefined,
       }}
     >
-      <div className="mt-4 border-t border-gray-200 pt-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleBackNavigation}
-            className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Back
-          </button>
-          <span className={`text-sm ${hasChanges ? 'text-red-600' : 'text-gray-500'}`}>
-            {hasChanges ? 'Unsaved changes' : 'All changes saved'}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleGoToPreview}
-            className="px-5 py-2 rounded-full text-white font-medium transition-opacity duration-200 hover:opacity-90"
-            style={{ backgroundColor: uvaRed }}
-          >
-            Go to preview
-          </button>
-          <button
-            onClick={handleSaveConfig}
-            disabled={saveDisabled}
-            className="px-5 py-2 rounded-full text-white font-medium transition-opacity duration-200 hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: saveDisabled ? '#9ca3af' : saving ? uvaRedDark : uvaRed }}
-          >
-            {saving ? 'Saving...' : 'Save changed configuration'}
-          </button>
-        </div>
-      </div>
-      <div className="mt-4 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-800">Change only in preview</p>
-            <p className="text-xs text-gray-600">Palette and background update on the participant preview after saving.</p>
+      <div className="mt-4 w-full flex flex-col items-center gap-3">
+        <div className="w-full max-w-5xl border-t border-gray-200 pt-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackNavigation}
+              className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Back
+            </button>
+            <span className={`text-sm ${hasChanges ? 'text-red-600' : 'text-gray-500'}`}>
+              {hasChanges ? 'Unsaved changes' : 'All changes saved'}
+            </span>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <ToggleSwitch
-              label="Color palette"
-              checked={colorScheme === 'funky'}
-              onChange={togglePalette}
-            />
-            <ToggleSwitch
-              label="Background"
-              checked={funkyBgEnabled}
-              onChange={toggleFunkyBg}
-            />
-            <ToggleSwitch
-              label="Funky font"
-              checked={funkyFontEnabled}
-              onChange={toggleFunkyFont}
-              hidden
-            />
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleGoToPreview}
+              className="px-5 py-2 rounded-full text-white font-medium transition-opacity duration-200 hover:opacity-90"
+              style={{ backgroundColor: uvaRed }}
+            >
+              Go to preview
+            </button>
+            <button
+              onClick={handleSaveConfig}
+              disabled={saveDisabled}
+              className="px-5 py-2 rounded-full text-white font-medium transition-opacity duration-200 hover:opacity-90 disabled:opacity-60"
+              style={{ backgroundColor: saveDisabled ? '#9ca3af' : saving ? uvaRedDark : uvaRed }}
+            >
+              {saving ? 'Saving...' : 'Save changed configuration'}
+            </button>
+          </div>
+        </div>
+        <div className="w-full max-w-4xl bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Change only in preview</p>
+              <p className="text-xs text-gray-600">Palette and background update on the participant preview after saving.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <ToggleSwitch
+                checked={colorScheme === 'funky'}
+                onChange={togglePalette}
+                offLabel="UvA color palette"
+                onLabel="Colorful color palette"
+              />
+              <ToggleSwitch
+                checked={funkyBgEnabled}
+                onChange={toggleFunkyBg}
+                offLabel="Simple background"
+                onLabel="Colorful background"
+              />
+              <ToggleSwitch
+                label="Funky font"
+                checked={funkyFontEnabled}
+                onChange={toggleFunkyFont}
+                hidden
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UvA.AspectsOfYou.Endpoint.Entities;
@@ -12,9 +13,11 @@ using UvA.AspectsOfYou.Endpoint.Entities;
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
     [DbContext(typeof(AspectContext))]
-    partial class AspectContextModelSnapshot : ModelSnapshot
+    [Migration("20260128092813_AddAllowMultipleSelectionsToQuestions")]
+    partial class AddAllowMultipleSelectionsToQuestions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,9 +231,6 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
 
                     b.Property<Guid>("QuestionId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("RegionFilter")
-                        .HasColumnType("text");
 
                     b.Property<string>("Title")
                         .IsRequired()

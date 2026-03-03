@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UvA.AspectsOfYou.Endpoint.Entities;
@@ -12,9 +13,11 @@ using UvA.AspectsOfYou.Endpoint.Entities;
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
     [DbContext(typeof(AspectContext))]
-    partial class AspectContextModelSnapshot : ModelSnapshot
+    [Migration("20260128071248_AddViewNumberToViewSurvey")]
+    partial class AddViewNumberToViewSurvey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,41 +49,11 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.ToTable("Answers");
                 });
 
-            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.DisplaySlot", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("SlotName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("SurveyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("ViewId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SurveyId");
-
-                    b.HasIndex("ViewId");
-
-                    b.ToTable("DisplaySlots");
-                });
-
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Question", b =>
                 {
                     b.Property<Guid>("QuestionId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("AllowMultipleSelections")
-                        .HasColumnType("boolean");
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
@@ -229,9 +202,6 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                     b.Property<Guid>("QuestionId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("RegionFilter")
-                        .HasColumnType("text");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -300,21 +270,6 @@ namespace UvA.AspectsOfYou.Endpoint.Migrations
                         .IsRequired();
 
                     b.Navigation("Question");
-                });
-
-            modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.DisplaySlot", b =>
-                {
-                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.Survey", "Survey")
-                        .WithMany()
-                        .HasForeignKey("SurveyId");
-
-                    b.HasOne("UvA.AspectsOfYou.Endpoint.Entities.ViewSurvey", "ViewSurvey")
-                        .WithMany()
-                        .HasForeignKey("ViewId");
-
-                    b.Navigation("Survey");
-
-                    b.Navigation("ViewSurvey");
                 });
 
             modelBuilder.Entity("UvA.AspectsOfYou.Endpoint.Entities.Question", b =>

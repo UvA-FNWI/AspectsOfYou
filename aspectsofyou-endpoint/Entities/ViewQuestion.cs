@@ -19,6 +19,7 @@ namespace UvA.AspectsOfYou.Endpoint.Entities
         public int OrderingId { get; set; }
         [Column("ViewType")]
         public List<string> ViewTypes { get; set; } = new();
+        public string? RegionFilter { get; set; }
         public ViewSurvey ViewSurvey { get; set; } = null!;
         public Question Question { get; set; } = null!;
         public ICollection<ViewAnswerOption> ViewAnswerOptions { get; set; } = new List<ViewAnswerOption>();

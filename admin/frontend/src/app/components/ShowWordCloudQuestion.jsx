@@ -21,11 +21,28 @@ const palettes = {
 Displays one question as a word cloud
 */
 
-export default function ShowWordCloudQuestion({ question, onTitleChange, readOnly = false, onOpenResponses, colorScheme = 'uva', hideTitle = false }) {
+export default function ShowWordCloudQuestion({ question, onTitleChange, readOnly = false, onOpenResponses, colorScheme = 'uva', hideTitle = false, chartFontSize }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);
   const svgRef = React.useRef();
+  const containerRef = React.useRef();
+  const [dims, setDims] = React.useState({ width: 0, height: 0 });
   const colors = palettes[colorScheme] || palettes.uva;
+
+  // Track container size so the cloud fills its cell
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (w > 0 && h > 0) setDims({ width: w, height: h });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleDoubleClick = () => {
     setIsEditing(true);
@@ -44,6 +61,7 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
 
   React.useEffect(() => {
     if (!question.answers || question.answers.length === 0) return;
+    if (!dims.width || !dims.height) return;
 
     d3.select(svgRef.current).selectAll("*").remove();
 
@@ -53,10 +71,9 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
     }));
 
     const maxResponses = Math.max(...words.map(w => w.count));
-    const totalResponses = words.reduce((sum, w) => sum + w.count, 0);
 
-    const maxFontSize = 72;
-    const minFontSize = 16;
+    const maxFontSize = chartFontSize ? Math.round(72 * chartFontSize / 13) : 72;
+    const minFontSize = chartFontSize ? Math.round(16 * chartFontSize / 13) : 16;
 
     // dynamic styling
     words.forEach(word => {
@@ -64,8 +81,8 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
       word.size = Math.max(minFontSize, Math.min(maxFontSize, minFontSize + (relativeSize * 32)));
     });
 
-    const width = svgRef.current?.parentElement?.offsetWidth || 400;
-    const height = width * 0.75; // Maintain aspect ratio
+    const width = dims.width;
+    const height = dims.height;
 
     const colorScale = d3.scaleOrdinal(colors);
 
@@ -81,6 +98,7 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
     layout.start();
 
     function draw(words) {
+      d3.select(svgRef.current).selectAll("*").remove();
       const svg = d3.select(svgRef.current)
         .attr("width", width)
         .attr("height", height);
@@ -112,12 +130,10 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
         .append("title")
         .text((d) => `${d.text}: ${d.count} responses`);
     }
-  }, [question.answers]);
-
-  console.log(question.answers);
+  }, [question.answers, dims, colors]);
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full h-full">
       {!hideTitle && (
         readOnly ? (
           <h2 className="text-2xl font-bold mb-4 text-center">{question.questionText}</h2>
@@ -138,15 +154,21 @@ export default function ShowWordCloudQuestion({ question, onTitleChange, readOnl
           </h2>
         )
       )}
-      <svg
-        ref={svgRef}
-        className="border border-gray-200 rounded-lg shadow-sm cursor-pointer"
-        onClick={() => {
-          if (!readOnly && onOpenResponses) {
-            onOpenResponses(question);
-          }
-        }}
-      ></svg>
+      <div
+        ref={containerRef}
+        className={`w-full flex-1 ${hideTitle ? 'min-h-0 h-full' : 'min-h-[200px]'}`}
+      >
+        <svg
+          ref={svgRef}
+          className="cursor-pointer block"
+          style={{ width: dims.width || '100%', height: dims.height || '100%' }}
+          onClick={() => {
+            if (!readOnly && onOpenResponses) {
+              onOpenResponses(question);
+            }
+          }}
+        ></svg>
+      </div>
     </div>
   );
 }

@@ -61,14 +61,19 @@ export default function SurveyPreviewPage({ params }) {
   }, [searchParams]);
 
   const { id } = params;
+  const viewId = searchParams?.get('viewId');
 
   useEffect(() => {
     async function fetchSurvey() {
       try {
         const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        // If viewId is provided, fetch that specific view, otherwise get the default view
+        const viewUrl = viewId 
+          ? `${apiUrl}/api/viewsurveys/${id}/view/${viewId}`
+          : `${apiUrl}/api/viewsurveys/${id}`;
         const [countsRes, viewRes] = await Promise.all([
           fetch(`${apiUrl}/api/surveys/${id}/responseCounts`),
-          fetch(`${apiUrl}/api/viewsurveys/${id}`)
+          fetch(viewUrl)
         ]);
 
         const counts = await countsRes.json();
@@ -110,6 +115,7 @@ export default function SurveyPreviewPage({ params }) {
 
           const questionTitle = vq?.title || q.questionText;
           const orderingId = typeof vq?.orderingId === 'number' ? vq.orderingId : null;
+          const regionFilter = vq?.regionFilter || null;
 
           const viewTypeListRaw = Array.isArray(vq?.viewTypes) ? vq.viewTypes : [];
           const viewTypesForQuestion = (viewTypeListRaw.length > 0 ? viewTypeListRaw : [questionType === 3 ? 'geochart' : 'circle'])
@@ -134,6 +140,7 @@ export default function SurveyPreviewPage({ params }) {
             questionType,
             orderingId,
             isExcludedFromView: !!vq?.isExcludedFromView,
+            regionFilter,
             viewTypes: viewTypesForQuestion,
             answers: answersWithViewTitles
           };
@@ -193,25 +200,33 @@ export default function SurveyPreviewPage({ params }) {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col w-full px-2 sm:px-3 py-3 overflow-hidden"
-      style={funkyStyle}
-    >
-      <div className="survey-content flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4 gap-4">
-          <img
-            src="/uvalogo.png"
-            alt="First logo"
-            className="w-32 h-auto object-contain"
-          />
-          <h1 className="text-4xl font-bold text-center flex-1">{title}</h1>
-          <img
-            src="/Artboard4.png"
-            alt="Second logo"
-            className="w-32 h-auto object-contain"
-          />
-        </div>
-        <div className="flex-1 min-h-0 overflow-auto">
+    <div className="min-h-screen lg:h-screen flex flex-col w-full lg:overflow-hidden" style={funkyStyle}>
+
+      {/* UvA red header — logo only, scales with viewport on desktop */}
+      <header
+        className="flex-shrink-0 flex items-center px-4 py-3"
+        style={{ backgroundColor: '#bc0031', paddingTop: 'clamp(0.5rem, 1vh, 1.25rem)', paddingBottom: 'clamp(0.5rem, 1vh, 1.25rem)' }}
+      >
+        <img src="/uvalogo.png" alt="UvA" className="w-auto object-contain" style={{ height: 'clamp(2rem, 3vh, 3.5rem)' }} />
+      </header>
+
+      {/* Main white content area: questions + title centered, Artboard logo pinned absolute */}
+      <main className="flex-1 min-h-0 relative flex flex-col items-center justify-center px-2 sm:px-3 py-4 lg:py-2 overflow-auto lg:overflow-hidden">
+        {/* Aspects-of-You logo: absolute bottom-right, does not affect flow */}
+        <img
+          src="/Artboard4.png"
+          alt="Aspects of You"
+          className="absolute bottom-4 right-4 h-auto object-contain pointer-events-none z-10"
+          style={{ width: 'clamp(5rem, 6vw, 8rem)' }}
+        />
+
+        {/* Title sits just above the questions; both together are centered as a unit */}
+        <h1
+          className="font-bold text-center mb-2 flex-shrink-0"
+          style={{ fontSize: 'clamp(1.5rem, 3vw, 3.5rem)' }}
+        >{title}</h1>
+        {/* Mobile: natural height, scrollable. Desktop (lg+): 2/3 of main height, centered */}
+        <div className="w-full lg:h-2/3 lg:flex-shrink-0">
           <ShowAnswers
             questions={questions}
             setQuestions={null}
@@ -222,7 +237,16 @@ export default function SurveyPreviewPage({ params }) {
             fillHeight
           />
         </div>
-      </div>
+      </main>
+
+      {/* Dark gray footer — scales with viewport on desktop */}
+      <footer
+        className="flex-shrink-0 flex items-center justify-center px-4"
+        style={{ backgroundColor: '#374151', paddingTop: 'clamp(0.5rem, 1vh, 1.25rem)', paddingBottom: 'clamp(0.5rem, 1vh, 1.25rem)' }}
+      >
+        <span style={{ color: '#9ca3af', fontSize: 'clamp(0.75rem, 1vw, 1.1rem)' }}>Aspects-of-You survey</span>
+      </footer>
+
     </div>
   );
 }

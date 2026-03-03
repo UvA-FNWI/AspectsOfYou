@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ShowCircle from './ShowCircle';
 import ShowBarplot from './ShowBarplot';
 import ShowWordCloudQuestion from './ShowWordCloudQuestion';
@@ -14,6 +14,11 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
   const [draggedView, setDraggedView] = useState(null);
   const [dragOverView, setDragOverView] = useState(null);
   const [editingTitleId, setEditingTitleId] = useState(null);
+  const [openEditOptions, setOpenEditOptions] = useState({});
+  const cardRefs = useRef({});
+  const [maxCardHeight, setMaxCardHeight] = useState(null);
+  // Per-view geo region state keyed by "questionId-viewIndex"
+  const [geoViewRegions, setGeoViewRegions] = useState({});
 
   const baseTypeForQuestion = (question) => (question.questionType === 3 ? 'geochart' : 'circle');
 
@@ -89,6 +94,13 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
           : q
       )
     );
+  };
+
+  const handleGeoRegionChange = (questionId, viewIndex, regionKey) => {
+    setGeoViewRegions((prev) => ({
+      ...prev,
+      [`${questionId}-${viewIndex}`]: regionKey
+    }));
   };
 
   const toggleExcluded = (questionId) => {
@@ -180,43 +192,131 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
   };
 
   const DragHandle = () => (
-    <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing p-4 invisible_select">
-      <div className="grid grid-cols-2 gap-1 w-4 h-3">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="w-1 h-1 bg-gray-400 rounded-full" />
-        ))}
-      </div>
-    </div>
+    <img
+      src="/drag.png"
+      alt="Drag handle"
+      className="h-6 w-6 cursor-grab active:cursor-grabbing select-none"
+      draggable={false}
+    />
   );
 
   const renderedQuestions = readOnly
     ? questions.filter((q) => !q.isExcludedFromView)
     : questions;
 
+  // --- Auto-scaling for fillHeight mode ---
+  const gridContainerRef = useRef(null);
+  const [containerDims, setContainerDims] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!fillHeight) return;
+    const el = gridContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerDims({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fillHeight]);
+
+  // Compute the column count that maximises per-cell area for the viewport
+  const optimalCols = useMemo(() => {
+    if (!fillHeight) return 1;
+    const n = renderedQuestions.length;
+    if (n === 0) return 1;
+    const { width: W, height: H } = containerDims;
+    if (W === 0 || H === 0) return Math.ceil(Math.sqrt(n));
+
+    let bestCols = 1;
+    let bestMinDim = 0;
+    for (let cols = 1; cols <= n; cols++) {
+      const rows = Math.ceil(n / cols);
+      const cellW = W / cols;
+      const cellH = H / rows;
+      const minDim = Math.min(cellW, cellH);
+      if (minDim > bestMinDim) {
+        bestMinDim = minDim;
+        bestCols = cols;
+      }
+    }
+    return bestCols;
+  }, [fillHeight, renderedQuestions.length, containerDims]);
+
+  // Discrete chart font-size tiers based on viewport width
+  const [chartFontSize, setChartFontSize] = useState(13);
+  useEffect(() => {
+    function updateFontTier() {
+      const w = window.innerWidth;
+      if (w >= 3000) setChartFontSize(24);
+      else if (w >= 2400) setChartFontSize(20);
+      else if (w >= 1800) setChartFontSize(17);
+      else if (w >= 1200) setChartFontSize(14);
+      else setChartFontSize(13);
+    }
+    updateFontTier();
+    window.addEventListener('resize', updateFontTier);
+    return () => window.removeEventListener('resize', updateFontTier);
+  }, []);
+
+  const toggleEditOptions = (questionId) => {
+    setOpenEditOptions((prev) => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }));
+  };
+
+  const recalcMaxHeight = () => {
+    let tallest = 0;
+    renderedQuestions.forEach((q) => {
+      const el = cardRefs.current[q.questionId];
+      if (el && el.offsetHeight > tallest) {
+        tallest = el.offsetHeight;
+      }
+    });
+    setMaxCardHeight(tallest || null);
+  };
+
+  useEffect(() => {
+    const handleResize = () => recalcMaxHeight();
+    recalcMaxHeight();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [renderedQuestions, viewTypes, readOnly, fillHeight]);
+
   const rootClass = fillHeight
-    ? 'w-full h-full grid items-stretch gap-3'
+    ? 'w-full h-full grid items-stretch gap-2'
     : 'flex flex-wrap justify-center items-center gap-3 w-full';
+  const fillRows = fillHeight ? Math.ceil(renderedQuestions.length / optimalCols) : 1;
   const rootStyle = fillHeight
-    ? { gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }
+    ? {
+        gridTemplateColumns: `repeat(${optimalCols}, 1fr)`,
+        gridTemplateRows: `repeat(${fillRows}, 1fr)`,
+      }
     : undefined;
 
   return (
-    <div className={rootClass} style={rootStyle}>
+    <div className={rootClass} style={rootStyle} ref={fillHeight ? gridContainerRef : undefined}>
       {renderedQuestions.map((question, index) => {
         const viewList = getViewListForQuestion(question);
         const isExcluded = !!question.isExcludedFromView;
         const isHovered = !readOnly && dragOverQuestion === index && draggedQuestion !== null && draggedQuestion !== index;
+        const isEditOpen = !!openEditOptions[question.questionId];
 
         return (
           <div
             key={question.questionId}
-            className={`rounded-2xl p-4 flex flex-col items-center bg-white relative w-full max-w-[700px] flex-shrink-0 ${
+            className={`rounded-2xl ${fillHeight ? 'p-1' : 'p-4'} flex flex-col items-center bg-white relative w-full flex-shrink-0 ${!readOnly ? 'border border-gray-200 shadow-sm' : ''} ${
               isExcluded ? 'invisible_select' : ''
-            } ${fillHeight ? 'h-full max-w-none' : ''}`}
+            } ${fillHeight ? 'h-full min-h-0 max-w-none overflow-hidden' : ''} ${!fillHeight && viewList.length <= 1 ? 'max-w-[700px]' : ''}`}
             style={{
               ...(fillHeight
                 ? { flexBasis: '100%', maxWidth: '100%' }
-                : { flexBasis: 'calc(50% - 6px)' }),
+                : viewList.length > 1
+                  ? { flexBasis: '100%' }
+                  : { flexBasis: 'calc(50% - 6px)' }),
               ...(isExcluded
                 ? {
                     position: 'relative',
@@ -229,7 +329,15 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                       backgroundColor: 'rgba(235, 179, 193, 0.3)',
                       transition: 'background-color 0.2s ease'
                     }
-                  : {})
+                  : {}),
+              ...(maxCardHeight ? { minHeight: `${maxCardHeight}px` } : {})
+            }}
+            ref={(el) => {
+              if (el) {
+                cardRefs.current[question.questionId] = el;
+              } else {
+                delete cardRefs.current[question.questionId];
+              }
             }}
             draggable={!readOnly && !isExcluded}
             onDragStart={readOnly ? undefined : (e) => handleQuestionDragStart(e, index)}
@@ -237,11 +345,12 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
             onDragLeave={readOnly ? undefined : handleQuestionDragLeave}
             onDrop={readOnly ? undefined : (e) => handleQuestionDrop(e, index)}
           >
-            {!readOnly && !isExcluded && <DragHandle />}
-
-            <div className="w-full flex items-start justify-between gap-3 mb-2">
+            <div className={`w-full flex flex-col ${fillHeight ? 'gap-1 mb-1' : 'gap-3 mb-2'}`}>
               {readOnly ? (
-                <h2 className="text-2xl font-bold text-center flex-1">{question.questionText}</h2>
+                <h2
+                  className="font-bold text-center flex-1"
+                  style={{ fontSize: fillHeight ? 'clamp(1rem, 2vw, 2.5rem)' : undefined }}
+                >{question.questionText}</h2>
               ) : editingTitleId === question.questionId ? (
                 <input
                   type="text"
@@ -265,37 +374,38 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                   {question.questionText}
                 </h2>
               )}
+
               {!readOnly && (
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={isExcluded}
-                    onChange={() => toggleExcluded(question.questionId)}
-                    className="h-4 w-4"
-                  />
-                  <span>Hide in preview/export</span>
-                </label>
+                <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <DragHandle />
+                    <button
+                      type="button"
+                      disabled={isExcluded || viewList.length >= 3}
+                      onClick={() => handleAddView(question)}
+                      className="px-3 py-2 rounded-full background-color-primary-main text-white transition-colors duration-200 disabled:opacity-50"
+                    >
+                      + Add view
+                    </button>
+                    <span className="text-xs text-gray-500">Up to 3 per question</span>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 ml-auto">
+                    <input
+                      type="checkbox"
+                      checked={isExcluded}
+                      onChange={() => toggleExcluded(question.questionId)}
+                      className="h-4 w-4"
+                    />
+                    <span>Hide in preview/export</span>
+                  </label>
+                </div>
               )}
             </div>
 
-            {!readOnly && (
-              <div className="w-full flex items-center justify-between mb-3 gap-3">
-                <button
-                  type="button"
-                  disabled={isExcluded || viewList.length >= 3}
-                  onClick={() => handleAddView(question)}
-                  className="px-3 py-2 rounded-full background-color-primary-main text-white transition-colors duration-200 disabled:opacity-50"
-                >
-                  + Add view
-                </button>
-                <span className="text-xs text-gray-500">Up to 3 per question</span>
-              </div>
-            )}
-
             <div
-              className="w-full grid gap-4"
+              className={`w-full grid ${fillHeight ? 'gap-2 flex-1 min-h-0' : 'gap-4'}`}
               style={{
-                gridTemplateColumns: `repeat(${Math.min(viewList.length, 3)}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${Math.min(viewList.length, 2)}, minmax(0, 1fr))`,
                 ...(fillHeight ? { gridAutoRows: '1fr' } : {})
               }}
             >
@@ -307,6 +417,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                   draggedView?.index !== viewIndex;
 
                 const geoWidescreen = viewType === 'geochart' && viewList.length > 2;
+                const perViewRegion = geoViewRegions[`${question.questionId}-${viewIndex}`];
 
                 const chart = viewType === 'circle' ? (
                   <ShowCircle
@@ -315,6 +426,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                     readOnly={readOnly}
                     colorScheme={colorScheme}
                     hideTitle
+                    chartFontSize={fillHeight ? chartFontSize : undefined}
                   />
                 ) : viewType === 'geochart' ? (
                   <ShowGeoChart
@@ -322,6 +434,8 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                     onTitleChange={handleQuestionTitleChange}
                     readOnly={readOnly}
                     colorScheme={colorScheme}
+                    regionFilter={perViewRegion}
+                    onRegionChange={!readOnly ? (region) => handleGeoRegionChange(question.questionId, viewIndex, region) : undefined}
                     hideTitle
                   />
                 ) : viewType === 'wordcloud' ? (
@@ -332,6 +446,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                     onOpenResponses={onOpenResponses}
                     colorScheme={colorScheme}
                     hideTitle
+                    chartFontSize={fillHeight ? chartFontSize : undefined}
                   />
                 ) : (
                   <ShowBarplot
@@ -340,16 +455,21 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
                     readOnly={readOnly}
                     colorScheme={colorScheme}
                     hideTitle
+                    chartFontSize={fillHeight ? chartFontSize : undefined}
                   />
                 );
 
                 return (
                   <div
                     key={`${question.questionId}-${viewIndex}`}
-                    className="w-full h-full border border-gray-200 rounded-lg p-3 bg-white relative"
+                    className={`w-full h-full min-h-0 border border-gray-200 rounded-lg ${fillHeight ? 'p-1 overflow-hidden' : 'p-3'} bg-white relative flex flex-col items-center justify-center`}
                     style={{
                       ...(viewHover ? { backgroundColor: 'rgba(235, 179, 193, 0.3)', transition: 'background-color 0.2s ease' } : {}),
-                      ...(geoWidescreen ? { gridColumn: 'span 2 / span 2' } : {})
+                      ...(geoWidescreen ? { gridColumn: 'span 2 / span 2' } : {}),
+                      // Center the orphan last item in a 2+1 layout (3 views, 2 columns)
+                      ...(viewList.length === 3 && viewIndex === 2 && !geoWidescreen
+                        ? { gridColumn: '1 / -1', justifySelf: 'center', maxWidth: '50%' }
+                        : {})
                     }}
                     draggable={!readOnly && viewList.length > 1}
                     onDragStart={readOnly ? undefined : (e) => handleViewDragStart(e, question.questionId, viewIndex)}
@@ -394,18 +514,30 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
             </div>
 
             {!readOnly && (
-              <div className="mt-3 w-full editor-only">
-                {question.answers.map((answer) => (
-                  <div key={answer.answerId} className="flex items-center space-x-2 text-sm mb-1">
-                    <span className="text-gray-500 w-10 text-right">{answer.count}</span>
-                    <input
-                      type="text"
-                      value={answer.answerText}
-                      onChange={(e) => handleAnswerTextChange(question.questionId, answer.answerId, e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-2 py-1"
-                    />
+              <div className="mt-3 w-full editor-only border border-gray-200 rounded-lg bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => toggleEditOptions(question.questionId)}
+                  className="w-full px-3 py-2 flex items-center justify-between text-sm font-semibold text-gray-800"
+                >
+                  <span>Edit options</span>
+                  <span className="text-xs text-gray-500">{isEditOpen ? 'Hide' : 'Show'}</span>
+                </button>
+                {isEditOpen && (
+                  <div className="px-3 pb-3 pt-1 space-y-1">
+                    {question.answers.map((answer) => (
+                      <div key={answer.answerId} className="flex items-center space-x-2 text-sm">
+                        <span className="text-gray-500 w-10 text-right">{answer.count}</span>
+                        <input
+                          type="text"
+                          value={answer.answerText}
+                          onChange={(e) => handleAnswerTextChange(question.questionId, answer.answerId, e.target.value)}
+                          className="flex-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

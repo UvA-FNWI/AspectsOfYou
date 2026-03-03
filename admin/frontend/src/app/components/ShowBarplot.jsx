@@ -20,10 +20,11 @@ const palettes = {
   ],
 };
 
-export default function ShowBarplot({ question, onTitleChange, readOnly = false, colorScheme = 'uva', hideTitle = false }) {
+export default function ShowBarplot({ question, onTitleChange, readOnly = false, colorScheme = 'uva', hideTitle = false, chartFontSize }) {
   const [title, setTitle] = React.useState(question.questionText);
   const [isEditing, setIsEditing] = React.useState(false);
   const colors = palettes[colorScheme] || palettes.uva;
+  const fontSize = chartFontSize || 13;
 
   const barData = [
     ['Answer', 'Responses', { role: 'style' }],
@@ -50,7 +51,7 @@ export default function ShowBarplot({ question, onTitleChange, readOnly = false,
   };
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full h-full">
       {!hideTitle && (
         readOnly ? (
           <h2 className="text-2xl font-bold mb-4 text-center">{question.questionText}</h2>
@@ -71,7 +72,7 @@ export default function ShowBarplot({ question, onTitleChange, readOnly = false,
           </h2>
         )
       )}
-      <div className="w-full min-h-[400px] h-[50vh]">
+      <div className={`w-full flex-1 ${hideTitle ? 'min-h-0 h-full' : 'min-h-[300px]'}`}>
         <Chart
           chartType="ColumnChart"
           width="100%"
@@ -80,8 +81,8 @@ export default function ShowBarplot({ question, onTitleChange, readOnly = false,
           options={{
             legend: 'none',
             chartArea: { width: '85%', height: '75%' },
-            hAxis: { title: '', textStyle: { fontSize: 13 } },
-            vAxis: { minValue: 0, textStyle: { fontSize: 13 } },
+            hAxis: { title: '', textStyle: { fontSize } },
+            vAxis: { minValue: 0, textStyle: { fontSize } },
             bar: { groupWidth: '70%' },
           }}
           loader={<div>Loading chart...</div>}
