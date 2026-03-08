@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuthenticatedFetch } from './utils/useAuthenticatedFetch';
 
 export default function Home() {
+  const fetch = useAuthenticatedFetch();
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

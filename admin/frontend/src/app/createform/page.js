@@ -14,6 +14,7 @@ import GeoQuestion from "../components/GeoQuestion";
 import UnsavedChangesModal from "../components/UnsavedChangesModal";
 import { useUnsavedChanges } from "../utils/useUnsavedChanges";
 import { getCountriesForRegion, detectRegionFromAnswers } from "../data/geoRegions";
+import { useAuthenticatedFetch } from "../utils/useAuthenticatedFetch";
 
 const QUESTION_TYPE_MAP = {
   single: 0,
@@ -30,6 +31,7 @@ const QUESTION_TYPE_FROM_API = {
 };
 
 function CreateFormInner() {
+  const fetch = useAuthenticatedFetch();
   const searchParams = useSearchParams();
   const router = useRouter();
   const surveyIdFromQuery = searchParams.get("surveyId");

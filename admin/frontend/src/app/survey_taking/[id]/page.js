@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import FillSurvey from '../../components_survey_taking/FillSurvey';
+import { useAuthenticatedFetch } from '../../utils/useAuthenticatedFetch';
 
 export default function SurveyPage({ params }) {
+  const fetch = useAuthenticatedFetch();
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

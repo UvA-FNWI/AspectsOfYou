@@ -7,6 +7,7 @@ The page where the visualization of a single survey is shown
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../components/ShowAnswers';
+import { useAuthenticatedFetch } from '../../utils/useAuthenticatedFetch';
 
 const uvaRed = '#bc0031';
 const uvaRedDark = '#840022';
@@ -57,6 +58,7 @@ function regroupByQuestion(responses) {
 }
 
 export default function SurveyPage({ params }) {
+  const fetch = useAuthenticatedFetch();
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
