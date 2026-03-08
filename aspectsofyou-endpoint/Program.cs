@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UvA.AspectsOfYou.Endpoint.Authentication;
 using UvA.AspectsOfYou.Endpoint.Dtos;
 using UvA.AspectsOfYou.Endpoint.Entities;
 /*
@@ -9,6 +10,8 @@ This file describes the API in order to communicate with the database
 var builder = WebApplication.CreateBuilder(args);
 
 var bannedTerms = LoadBannedTerms(builder.Environment.ContentRootPath);
+
+builder.Services.AddSurfConextAuthentication(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -27,7 +30,9 @@ builder.Services.AddDbContext<AspectContext>(opt =>
 
 var app = builder.Build();
 
+app.UseAuthentication();
 app.UseRouting();
+app.UseAuthorization();
 
 app.UseCors("AllowReactDev");
 
@@ -130,7 +135,7 @@ app.MapPost("/api/surveys", async (AspectContext db, CreateSurveyDto surveyDto) 
     }
 
     return Results.Created($"/api/surveys/{survey.SurveyId}", survey.SurveyId);
-});
+}).RequireAuthorization();
 
 app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDto surveyDto) =>
 {
