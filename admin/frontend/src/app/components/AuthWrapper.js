@@ -3,13 +3,17 @@
 import { AuthProvider, useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 
-// TODO: move hard-coded config values somewhere
+// Browser OIDC config must only contain public-client values.
 const oidcConfig = {
-  authority: "https://auth-pr.datanose.nl",
-  client_id: "datanose.local",
-  redirect_uri: typeof window !== "undefined" ? window.location.origin : "",
-  post_logout_redirect_uri: typeof window !== "undefined" ? window.location.origin : "",
-  scope: "openid profile email", // Typical OIDC scopes
+  authority: process.env.NEXT_PUBLIC_OIDC_AUTHORITY || "https://connect.surfconext.nl",
+  client_id: process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || "aspectsofyou.datanose.nl",
+  redirect_uri:
+    process.env.NEXT_PUBLIC_OIDC_REDIRECT_URI ||
+    (typeof window !== "undefined" ? window.location.origin : ""),
+  post_logout_redirect_uri:
+    process.env.NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI ||
+    (typeof window !== "undefined" ? window.location.origin : ""),
+  scope: process.env.NEXT_PUBLIC_OIDC_SCOPE || "openid profile email",
   onSigninCallback: () => {
     // Clear URL parameters after signin
     window.history.replaceState({}, document.title, window.location.pathname);

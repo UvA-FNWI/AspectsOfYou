@@ -11,15 +11,35 @@ var builder = WebApplication.CreateBuilder(args);
 
 var bannedTerms = LoadBannedTerms(builder.Environment.ContentRootPath);
 
+var configuredCorsOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+var corsOrigins = configuredCorsOrigins
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.Trim())
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
 builder.Services.AddSurfConextAuthentication(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactDev",
-        policy => policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod()
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            if (corsOrigins.Length > 0)
+            {
+                policy
+                    .WithOrigins(corsOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                return;
+            }
+
+            // In production, no configured origins means no cross-origin access.
+            policy.SetIsOriginAllowed(_ => false);
+        }
     );
 });
 
@@ -30,11 +50,10 @@ builder.Services.AddDbContext<AspectContext>(opt =>
 
 var app = builder.Build();
 
-app.UseAuthentication();
 app.UseRouting();
+app.UseCors("AllowFrontend");
+app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseCors("AllowReactDev");
 
 // Makes the connection to the database more robust (implemented after failing)
 using (var scope = app.Services.CreateScope())
@@ -463,8 +482,8 @@ async Task<IResult> UpdateViewSurvey(AspectContext db, ViewSurvey viewSurvey, Vi
             ExcludedResponseIds = q.ExcludedResponseIds,
             IsExcludedFromView = q.IsExcludedFromView,
             OrderingId = q.OrderingId,
-                RegionFilter = q.RegionFilter,
-                ViewTypes = (q.ViewTypes == null || q.ViewTypes.Count == 0)
+            RegionFilter = q.RegionFilter,
+            ViewTypes = (q.ViewTypes == null || q.ViewTypes.Count == 0)
                     ? new List<string> { "circleplot" }
                     : q.ViewTypes.Take(3).ToList()
         };
@@ -533,7 +552,7 @@ app.MapPost("/api/viewsurveys/{surveyId}/new", async (AspectContext db, Guid sur
         .Include(s => s.Questions)
             .ThenInclude(q => q.Answers)
         .FirstOrDefaultAsync(s => s.SurveyId == surveyId);
-    
+
     if (survey == null)
         return Results.NotFound(new { message = "Survey not found" });
 
