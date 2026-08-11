@@ -40,3 +40,16 @@ Next.js admin UI for creating surveys and viewing survey results.
 - `@mui/material`, `@emotion/*` — UI components and styling.
 - `@mui/x-charts`, `d3`, `d3-cloud` — charts and word cloud visualizations.
 - `html2canvas`, `jspdf` — client-side export / screenshot to PDF features.
+
+## OIDC Configuration
+
+The admin frontend is a browser app and must be configured as a public OIDC client.
+
+- Use only public OIDC settings in frontend env vars:
+  - `NEXT_PUBLIC_OIDC_AUTHORITY`
+  - `NEXT_PUBLIC_OIDC_CLIENT_ID`
+  - `NEXT_PUBLIC_OIDC_REDIRECT_URI`
+  - `NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI`
+  - `NEXT_PUBLIC_OIDC_SCOPE`
+- Do not put `clientSecret` in frontend code or `NEXT_PUBLIC_*` variables.
+- Keep `clientSecret` only on the backend (for server-to-server calls).

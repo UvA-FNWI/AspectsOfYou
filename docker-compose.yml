@@ -22,6 +22,10 @@ services:
         condition: service_healthy
     environment:
       - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry
+      - Cors__AllowedOrigins__0=http://localhost:3003
+      - Cors__AllowedOrigins__1=http://127.0.0.1:3003
+    env_file:
+      - .env
     networks:
       - forms-network
       - aspectsofyou-network
