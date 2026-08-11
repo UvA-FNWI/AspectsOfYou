@@ -25,7 +25,7 @@ builder.Services.AddSurfConextAuthentication(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontendDev",
+    options.AddPolicy("AllowFrontend",
         policy =>
         {
             if (corsOrigins.Length > 0)
@@ -51,7 +51,7 @@ builder.Services.AddDbContext<AspectContext>(opt =>
 var app = builder.Build();
 
 app.UseRouting();
-app.UseCors("AllowFrontendDev");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
