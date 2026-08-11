@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspectsofyou-frontend
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app: aspectsofyou-frontend
+    component: frontend
+spec:
+  selector:
+    matchLabels:
+      app: aspectsofyou-frontend
+  replicas: {{ .Values.frontend.replicas }}
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: aspectsofyou-frontend
+        component: frontend
+    spec:
+      containers:
+        - name: aspectsofyou-frontend
+          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "{{ .Values.frontend.port }}"
+            - name: HOSTNAME
+              value: "0.0.0.0"

@@ -1,9 +1,24 @@
 hostname: aspectsofyou.local
 ingressClass: nginx
-image: fnwicr.azurecr.io/aspectsofyou
-tag: latest
+
+backend:
+  image: fnwicr.azurecr.io/aspectsofyou-endpoint
+  tag: latest
+  replicas: 1
+  port: 80
+  env:
+    - name: Cors__AllowedOrigins
+      value: "https://aspectsofyou.datanose.nl"
+
+
+frontend:
+  image: fnwicr.azurecr.io/aspectsofyou-frontend
+  tag: latest
+  replicas: 1
+  port: 3000
 
 azure:
+  enabled: false
   keyvaultName: keyvaultName
   resourceGroup: resourceGroupName
   subscriptionId: subscriptionId
@@ -11,5 +26,7 @@ azure:
   clientId: clientId
   identityName: identityName
   secrets:
-    - name: aspectsofyou-connectionstring
+    - name: "aspectsofyou-surfconext-secret"
+      key: SurfConext__ClientSecret
+    - name: "aspectsofyou-connectionstring"
       key: ConnectionStrings__AspectContext

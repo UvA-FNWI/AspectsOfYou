@@ -14,12 +14,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build container
+      - name: Build backend container
         run: |
           set -euxo pipefail
           docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-endpoint:latest" .
           docker push "fnwicr.azurecr.io/aspectsofyou-endpoint:latest"
         working-directory: ./aspectsofyou-endpoint
+
+      - name: Build frontend container
+        run: |
+          set -euxo pipefail
+          docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-frontend:latest" .
+          docker push "fnwicr.azurecr.io/aspectsofyou-frontend:latest"
+        working-directory: ./admin/frontend
 
       - name: Build chart and release
         env:
