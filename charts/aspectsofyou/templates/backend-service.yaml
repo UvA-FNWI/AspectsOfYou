@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aspectsofyou-endpoint
+  namespace: "{{ .Release.Namespace }}"
+  labels: 
+    app: aspectsofyou-endpoint
+    component: backend
+spec:
+  selector:
+    app: aspectsofyou-endpoint
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.backend.port }}
+  type: ClusterIP

@@ -3,34 +3,38 @@ kind: Deployment
 metadata:
   name: aspectsofyou-endpoint
   namespace: "{{ .Release.Namespace }}"
+  labels:
+    app: aspectsofyou-endpoint
+    component: backend
 spec:
   selector:
     matchLabels:
       app: aspectsofyou-endpoint
-  replicas: 1
+  replicas: {{ .Values.backend.replicas }}
   revisionHistoryLimit: 3
   template:
     metadata:
       labels:
         app: aspectsofyou-endpoint
+        component: backend
     spec:
       containers:
         - name: aspectsofyou-endpoint
-          image: "{{ .Values.image }}-endpoint:{{ .Values.tag }}"
+          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: {{ .Values.backend.port }}
           envFrom:
             - secretRef:
                 name: aspectsofyou-secret
-          {{- if .Values.azure }}
+          {{- if .Values.azure.enabled }}
           volumeMounts:
             - name: secrets-store-inline
               mountPath: "/etc/secrets"
               readOnly: true
           {{- end }}
 
-      {{- if .Values.azure }}
+      {{- if .Values.azure.enabled }}
       volumes:
         - name: secrets-store-inline
           csi:
