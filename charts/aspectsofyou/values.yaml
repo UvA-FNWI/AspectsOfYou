@@ -5,8 +5,10 @@ backend:
   image: fnwicr.azurecr.io/aspectsofyou-endpoint
   tag: latest
   replicas: 1
-  port: 80
+  port: 8080
   env:
+    - name: ASPNETCORE_URLS
+      value: "http://+:80"
     - name: Cors__AllowedOrigins
       value: "https://aspectsofyou.datanose.nl"
 
