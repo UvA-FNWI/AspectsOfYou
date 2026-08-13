@@ -31,3 +31,6 @@ spec:
               value: "{{ .Values.frontend.port }}"
             - name: HOSTNAME
               value: "0.0.0.0"
+            {{- if .Values.frontend.env }}
+            {{- toYaml .Values.frontend.env | nindent 12 }}
+            {{- end }}
