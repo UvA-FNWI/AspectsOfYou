@@ -109,7 +109,7 @@ export default function SurveyPage({ params }) {
     async function fetchSurvey() {
       // Gets grouped answers per question
       try {
-        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         // If viewId is provided, fetch that specific view, otherwise get the default view
         const viewUrl = viewId 
           ? `${apiUrl}/api/viewsurveys/${id}/view/${viewId}`
@@ -284,7 +284,7 @@ export default function SurveyPage({ params }) {
         return;
       }
 
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const res = await fetch(`${apiUrl}/api/questions/${question.questionId}/responses`);
       const data = await res.json();
       if (!res.ok) {
@@ -365,7 +365,7 @@ export default function SurveyPage({ params }) {
 
     try {
       setSaving(true);
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
 
       const payload = {
         title,

@@ -28,7 +28,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchSurveys() {
       try {
-        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys`);
 
         if (!response.ok) {
@@ -60,7 +60,7 @@ export default function Home() {
 
   async function fetchDisplaySlots() {
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/displayslots`);
       if (response.ok) {
         const slots = await response.json();
@@ -82,7 +82,7 @@ export default function Home() {
 
   const deleteSurvey = async (surveyId) => {
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/surveys/delete/${surveyId}`, {
         method: 'DELETE',
       });
@@ -117,7 +117,7 @@ export default function Home() {
   };
 
   const updateSurveyStatus = async ({ surveyId, live, editing }) => {
-    const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+    const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
     const response = await fetch(`${apiUrl}/api/surveys/${surveyId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -182,7 +182,7 @@ export default function Home() {
 
   const addNewView = async (surveyId) => {
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/viewsurveys/${surveyId}/new`, {
         method: 'POST',
       });
@@ -218,7 +218,7 @@ export default function Home() {
   const confirmDeleteViewAction = async () => {
     if (!confirmDeleteView.surveyId || !confirmDeleteView.viewId) return;
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/viewsurveys/${confirmDeleteView.surveyId}/view/${confirmDeleteView.viewId}`, {
         method: 'DELETE',
       });
@@ -259,7 +259,7 @@ export default function Home() {
 
   const assignToSlot = async (slotName, surveyId, viewId = null) => {
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/displayslots/${slotName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,7 +289,7 @@ export default function Home() {
 
   const clearSlot = async (slotName) => {
     try {
-      const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
       const response = await fetch(`${apiUrl}/api/displayslots/${slotName}`, {
         method: 'DELETE',
       });

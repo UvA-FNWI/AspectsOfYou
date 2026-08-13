@@ -15,7 +15,7 @@ export default function FillInTheSurveyPage() {
   useEffect(() => {
     async function fetchSlot() {
       try {
-        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/displayslots/fillin`);
         
         if (!response.ok) {

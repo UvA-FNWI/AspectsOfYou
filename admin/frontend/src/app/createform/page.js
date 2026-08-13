@@ -99,7 +99,7 @@ function CreateFormInner() {
     setError(null);
 
     try {
-      const apiUrl = process.env.DOTNET_API_URL || "http://localhost:5059";
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || "http://localhost:5059";
       const response = await fetch(`${apiUrl}/api/surveys/${id}`);
       if (!response.ok) {
         throw new Error("Failed to load survey");
@@ -246,7 +246,7 @@ function CreateFormInner() {
     setError(null);
 
     try {
-      const apiUrl = process.env.DOTNET_API_URL || "http://localhost:5059";
+      const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || "http://localhost:5059";
       const payload = buildPayload(goLive);
       const isEditing = !!surveyId;
       const endpoint = isEditing ? `${apiUrl}/api/surveys/${surveyId}` : `${apiUrl}/api/surveys`;
