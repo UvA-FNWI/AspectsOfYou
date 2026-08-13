@@ -18,6 +18,9 @@ frontend:
   tag: latest
   replicas: 1
   port: 3000
+  env:
+    - name: DOTNET_API_URL
+      value: "http://aspectsofyou.datanose.nl"
 
 azure:
   enabled: false
