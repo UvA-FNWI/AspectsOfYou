@@ -7,6 +7,8 @@ backend:
   replicas: 1
   port: 80
   env:
+    - name: ASPNETCORE_URLS
+      value: "http://+:80"
     - name: Cors__AllowedOrigins
       value: "https://aspectsofyou.datanose.nl"
 
