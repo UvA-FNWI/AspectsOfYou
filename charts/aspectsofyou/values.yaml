@@ -5,7 +5,7 @@ backend:
   image: fnwicr.azurecr.io/aspectsofyou-endpoint
   tag: latest
   replicas: 1
-  port: 8080
+  port: 80
   env:
     - name: ASPNETCORE_URLS
       value: "http://+:80"
