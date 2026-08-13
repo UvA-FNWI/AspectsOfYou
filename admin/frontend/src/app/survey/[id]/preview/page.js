@@ -81,7 +81,7 @@ export default function SurveyPreviewPage({ params }) {
   useEffect(() => {
     async function fetchSurvey() {
       try {
-        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         // If viewId is provided, fetch that specific view, otherwise get the default view
         const viewUrl = viewId 
           ? `${apiUrl}/api/viewsurveys/${id}/view/${viewId}`

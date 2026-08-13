@@ -18,7 +18,7 @@ export default function SurveyPage({ params }) {
     async function fetchSurvey() {
       console.log(id)
       try { // Fetches questions from the survey
-        const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+        const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys/${id}`);
 
         if (!response.ok) {
@@ -51,7 +51,7 @@ export default function SurveyPage({ params }) {
 
   // Handle submission of each individual answer such that we cannot seperate users
   const uploadAnswerToDatabase = async (questionId, answer) => {
-    const apiUrl = process.env.DOTNET_API_URL || 'http://localhost:5059';
+    const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
 
     console.log(id)
 

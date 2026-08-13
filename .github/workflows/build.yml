@@ -22,6 +22,8 @@ jobs:
         working-directory: ./aspectsofyou-endpoint
 
       - name: Build frontend container
+        env:
+          NEXT_PUBLIC_DOTNET_API_URL: "https://aspectsofyou.datanose.nl/api"
         run: |
           set -euxo pipefail
           docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-frontend:latest" .
