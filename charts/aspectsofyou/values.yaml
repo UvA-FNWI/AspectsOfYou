@@ -20,7 +20,7 @@ frontend:
   port: 3000
   env:
     - name: DOTNET_API_URL
-      value: "http://aspectsofyou.datanose.nl"
+      value: "https://aspectsofyou.datanose.nl/api"
 
 azure:
   enabled: false
