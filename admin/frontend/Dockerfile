@@ -1,5 +1,9 @@
 FROM node:20-alpine AS base
 
+# Accept build arg for API URL
+ARG NEXT_PUBLIC_DOTNET_API_URL
+ENV NEXT_PUBLIC_DOTNET_API_URL=${NEXT_PUBLIC_DOTNET_API_URL}
+
 FROM base AS deps
 WORKDIR /app
 
