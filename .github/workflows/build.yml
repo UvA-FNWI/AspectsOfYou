@@ -23,11 +23,11 @@ jobs:
 
       - name: Build frontend container
         env:
-          NEXT_PUBLIC_DOTNET_API_URL: "https://aspectsofyou.datanose.nl/"
+          NEXT_PUBLIC_DOTNET_API_URL: "https://aspectsofyou.datanose.nl"
         run: |
           set -euxo pipefail
           docker build \
-          --build-arg NEXT_PUBLIC_DOTNET_API_URL="https://aspectsofyou.datanose.nl/" \
+          --build-arg NEXT_PUBLIC_DOTNET_API_URL="https://aspectsofyou.datanose.nl" \
           -f Dockerfile \
           -t "fnwicr.azurecr.io/aspectsofyou-frontend:latest" \
           .
