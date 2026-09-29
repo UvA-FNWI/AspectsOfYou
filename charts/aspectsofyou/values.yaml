@@ -11,6 +11,8 @@ backend:
       value: "http://+:80"
     - name: Cors__AllowedOrigins
       value: "https://aspectsofyou.datanose.nl"
+    - name: SurfConext__AdminInviteMemberOf
+      value: "urn:mace:surf.nl:invite.surfconext.nl:f97d2c83-6819-4567-a549-35d737304755:datanose_-_aspects_of_you"
 
 
 frontend:

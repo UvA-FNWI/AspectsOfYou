@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DisplayPlaceholder from '../components/DisplayPlaceholder';
-import { useAuthenticatedFetch } from '../utils/useAuthenticatedFetch';
+import { useApiFetch } from '../utils/useApiFetch';
 
 export default function Display2Page() {
-  const fetch = useAuthenticatedFetch();
+  const fetch = useApiFetch();
   const [slotData, setSlotData] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
