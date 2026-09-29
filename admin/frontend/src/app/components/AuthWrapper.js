@@ -55,6 +55,14 @@ function AdminAuthHandler({ children }) {
     );
   }
 
+  if (!auth.user?.access_token) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        Loading access token...
+      </div>
+    );
+  }
+
   if (!isAdminInviteMember(auth.user)) {
     return (
       <div

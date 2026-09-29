@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuthenticatedFetch } from './utils/useAuthenticatedFetch';
+import { useAuthAccessToken, useAuthenticatedFetch } from './utils/useAuthenticatedFetch';
 
 export default function Home() {
   const fetch = useAuthenticatedFetch();
+  const accessToken = useAuthAccessToken();
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,13 +27,18 @@ export default function Home() {
   const [dragOverSlot, setDragOverSlot] = useState(null); // 'display1' | 'display2' | 'display3'
 
   useEffect(() => {
+    if (!accessToken) {
+      setLoading(true);
+      return;
+    }
+
     async function fetchSurveys() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys`);
 
         if (!response.ok) {
-          throw new Error('Failed to fetch surveys');
+          throw new Error(`Failed to fetch surveys (${response.status})`);
         }
 
         const data = await response.json();
@@ -56,7 +62,7 @@ export default function Home() {
 
     fetchSurveys();
     fetchDisplaySlots();
-  }, []);
+  }, [accessToken, fetch]);
 
   async function fetchDisplaySlots() {
     try {
