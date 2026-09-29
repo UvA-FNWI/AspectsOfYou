@@ -154,7 +154,7 @@ app.MapPost("/api/surveys", async (AspectContext db, CreateSurveyDto surveyDto) 
     }
 
     return Results.Created($"/api/surveys/{survey.SurveyId}", survey.SurveyId);
-}).RequireAuthorization();
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDto surveyDto) =>
 {
@@ -300,7 +300,7 @@ app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDt
     await transaction.CommitAsync();
 
     return Results.Ok(new { surveyId = survey.SurveyId, live = survey.Live, editing = survey.Editing });
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 app.MapPost("/api/surveys/{id}/status", async (AspectContext db, Guid id, UpdateSurveyStatusDto statusDto) =>
 {
@@ -320,7 +320,7 @@ app.MapPost("/api/surveys/{id}/status", async (AspectContext db, Guid id, Update
     await db.SaveChangesAsync();
 
     return Results.Ok(new { surveyId = survey.SurveyId, live = survey.Live, editing = survey.Editing });
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // 2. Get view values for a survey (returns first/default view), including questions, excluded answers, and answer views
 app.MapGet("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId) =>
@@ -424,7 +424,7 @@ app.MapGet("/api/viewsurveys/{surveyId}/all", async (AspectContext db, Guid surv
         .ToListAsync();
 
     return Results.Ok(views);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // 3. Update the view tables for a given survey (replace all view questions and answers for a survey)
 // This endpoint updates the first/default view - kept for backwards compatibility
@@ -438,7 +438,7 @@ app.MapPut("/api/viewsurveys/{surveyId}", async (AspectContext db, Guid surveyId
         return Results.NotFound();
 
     return await UpdateViewSurvey(db, viewSurvey, update);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // Update a specific view by its ID
 app.MapPut("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectContext db, Guid surveyId, int viewId, ViewSurvey update) =>
@@ -448,7 +448,7 @@ app.MapPut("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectContext
         return Results.NotFound();
 
     return await UpdateViewSurvey(db, viewSurvey, update);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // Helper function to update a view survey
 async Task<IResult> UpdateViewSurvey(AspectContext db, ViewSurvey viewSurvey, ViewSurvey update)
@@ -543,7 +543,7 @@ app.MapDelete("/api/viewsurveys/{surveyId}/view/{viewId:int}", async (AspectCont
     await db.SaveChangesAsync();
 
     return Results.Ok(new { message = "View deleted successfully" });
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // Create a new view for a survey
 app.MapPost("/api/viewsurveys/{surveyId}/new", async (AspectContext db, Guid surveyId) =>
@@ -615,7 +615,7 @@ app.MapPost("/api/viewsurveys/{surveyId}/new", async (AspectContext db, Guid sur
         ViewNumber = viewSurvey.ViewNumber,
         Title = viewSurvey.Title
     });
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 
 /*
@@ -691,7 +691,7 @@ app.MapGet("/api/surveys", async (AspectContext db) =>
         .ToListAsync();
 
     return Results.Ok(surveys);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 /*
 Select a certain survey id.
@@ -754,7 +754,7 @@ app.MapGet("/api/surveys/{surveyId}/responses", async (AspectContext db, Guid su
         .ToListAsync();
 
     return Results.Ok(responses);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 /*
 Returns all responses to a certain question
@@ -780,7 +780,7 @@ app.MapGet("/api/questions/{questionId}/responses", async (AspectContext db, Gui
         .ToListAsync();
 
     return Results.Ok(responses);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 
 /*
@@ -951,7 +951,7 @@ app.MapDelete("/api/surveys/delete/{id}", async (AspectContext db, Guid id) =>
     await db.SaveChangesAsync();
 
     return Results.NoContent();
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // ==================== Display Slots API ====================
 
@@ -983,7 +983,7 @@ app.MapGet("/api/displayslots", async (AspectContext db) =>
         .ToListAsync();
 
     return Results.Ok(slots);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // Get a specific slot by name
 app.MapGet("/api/displayslots/{slotName}", async (AspectContext db, string slotName) =>
@@ -1060,7 +1060,7 @@ app.MapPost("/api/displayslots/{slotName}", async (AspectContext db, string slot
         .FirstOrDefaultAsync();
 
     return Results.Ok(result);
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 // Clear a slot
 app.MapDelete("/api/displayslots/{slotName}", async (AspectContext db, string slotName) =>
@@ -1074,7 +1074,7 @@ app.MapDelete("/api/displayslots/{slotName}", async (AspectContext db, string sl
     await db.SaveChangesAsync();
 
     return Results.Ok(new { message = "Slot cleared" });
-});
+}).RequireAuthorization(AuthorizationPolicies.Admin);
 
 app.Run();
 

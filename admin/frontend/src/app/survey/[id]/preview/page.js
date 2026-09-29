@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../../components/ShowAnswers';
 import ImageRow from '@/app/components/ImageRow';
-import { useAuthenticatedFetch } from '../../../utils/useAuthenticatedFetch';
+import { useApiFetch } from '../../../utils/useApiFetch';
 
 // Hook to track lg breakpoint (1024px)
 function useIsDesktop() {
@@ -45,7 +45,7 @@ function regroupByQuestion(responses) {
 }
 
 export default function SurveyPreviewPage({ params }) {
-  const fetch = useAuthenticatedFetch();
+  const fetch = useApiFetch();
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

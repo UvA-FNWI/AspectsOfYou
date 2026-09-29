@@ -134,8 +134,20 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         if (!string.IsNullOrWhiteSpace(r.Sub))
             claims.Add(new Claim("sub", r.Sub));
 
+        if (!string.IsNullOrWhiteSpace(r.FullName))
+            claims.Add(new Claim(ClaimTypes.Name, r.FullName));
+
         if (!string.IsNullOrWhiteSpace(r.Email))
             claims.Add(new Claim(ClaimTypes.Email, r.Email));
+
+        if (r.IsMemberOf is { Length: > 0 })
+        {
+            foreach (var membership in r.IsMemberOf)
+            {
+                if (!string.IsNullOrWhiteSpace(membership))
+                    claims.Add(new Claim(SurfConextClaimTypes.IsMemberOf, membership));
+            }
+        }
 
         if (r.EmailVerified.HasValue)
             claims.Add(new Claim("email_verified", r.EmailVerified.Value ? "true" : "false"));
