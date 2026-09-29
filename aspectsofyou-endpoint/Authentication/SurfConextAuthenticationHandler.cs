@@ -64,9 +64,8 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         if (!resp.Active)
             return AuthenticateResult.Fail("inactive token");
 
-        if (string.IsNullOrEmpty(resp.FullName) ||
-            string.IsNullOrEmpty(resp.Email))
-            return AuthenticateResult.Fail("missing name or email");
+        if (string.IsNullOrEmpty(resp.Email))
+            return AuthenticateResult.Fail("missing email");
 
         if (resp.Uids is null || resp.Uids.Length == 0)
             return AuthenticateResult.Fail("missing uid");
@@ -116,7 +115,17 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
 
         try
         {
-            return JsonSerializer.Deserialize<IntrospectionResponse>(content);
+            using var document = JsonDocument.Parse(content);
+            var resp = JsonSerializer.Deserialize<IntrospectionResponse>(content);
+            if (resp is null)
+                return null;
+
+            var isMemberOf = SurfConextClaimParsing.MergeIsMemberOf(
+                document.RootElement,
+                token,
+                resp.IsMemberOf);
+
+            return resp with { IsMemberOf = isMemberOf.Length > 0 ? isMemberOf : resp.IsMemberOf };
         }
         catch (Exception ex)
         {
