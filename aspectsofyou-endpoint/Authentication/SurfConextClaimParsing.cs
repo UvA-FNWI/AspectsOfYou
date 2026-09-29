@@ -46,18 +46,17 @@ internal static class SurfConextClaimParsing
     {
         var parts = bearerToken.Split('.');
         if (parts.Length < 2)
-            yield break;
+            return Array.Empty<string>();
 
         try
         {
             var payloadJson = Encoding.UTF8.GetString(Base64UrlDecode(parts[1]));
             using var doc = JsonDocument.Parse(payloadJson);
-            foreach (var value in ParseIsMemberOfProperty(doc.RootElement))
-                yield return value;
+            return ParseIsMemberOfProperty(doc.RootElement).ToArray();
         }
         catch
         {
-            yield break;
+            return Array.Empty<string>();
         }
     }
 
