@@ -53,7 +53,8 @@ export function readIsMemberOfClaims(profile, accessTokenPayload) {
 }
 
 export function isAdminInviteMember(user) {
-  const tokenPayload = decodeJwtPayload(user?.access_token);
+  const tokenPayload =
+    decodeJwtPayload(user?.access_token) ?? decodeJwtPayload(user?.id_token);
   const memberships = readIsMemberOfClaims(user?.profile, tokenPayload);
   return memberships.some((value) => value === ADMIN_INVITE_MEMBER_OF);
 }

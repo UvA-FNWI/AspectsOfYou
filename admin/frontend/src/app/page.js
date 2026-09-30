@@ -38,7 +38,15 @@ export default function Home() {
         const response = await fetch(`${apiUrl}/api/surveys`);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch surveys (${response.status})`);
+          let detail = `HTTP ${response.status}`;
+          try {
+            const problem = await response.json();
+            if (problem?.detail) detail = problem.detail;
+            else if (problem?.title) detail = problem.title;
+          } catch {
+            // ignore non-JSON error bodies
+          }
+          throw new Error(detail);
         }
 
         const data = await response.json();
@@ -54,7 +62,7 @@ export default function Home() {
         setSurveys(normalized);
       } catch (err) {
         console.error('Error fetching surveys:', err);
-        setError('Failed to load surveys. Please try again later.');
+        setError(err.message || 'Failed to load surveys. Please try again later.');
       } finally {
         setLoading(false);
       }
