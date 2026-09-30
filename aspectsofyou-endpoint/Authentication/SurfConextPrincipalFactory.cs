@@ -60,6 +60,12 @@ internal static class SurfConextPrincipalFactory
     internal static ClaimsPrincipal CreateFromValidatedJwt(JwtSecurityToken jwt, string rawToken)
     {
         var claims = jwt.Claims.Select(c => new Claim(c.Type, c.Value)).ToList();
+        AddIsMemberOfClaims(
+            claims,
+            claims
+                .Where(c => c.Value.StartsWith("urn:mace:surf.nl:invite", StringComparison.Ordinal))
+                .Select(c => c.Value)
+                .ToArray());
 
         if (SurfConextClaimParsing.TryReadJwtPayload(rawToken, out var payload))
         {

@@ -60,7 +60,13 @@ function readIsMemberOfFromObject(source) {
       normalizedKey.includes("ismemberof")
     ) {
       appendMembershipValue(memberships, value);
+      continue;
     }
+
+    appendMembershipValue(
+      memberships,
+      typeof value === "string" && value.startsWith("urn:mace:surf.nl:invite") ? value : null
+    );
   }
 
   return memberships;
