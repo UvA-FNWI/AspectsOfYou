@@ -10,6 +10,8 @@ public static class SurfConextExtensions
     {
         services.AddMemoryCache();
 
+        services.Configure<SurfConextOptions>(config.GetSection(SurfConextOptions.Section));
+
         var options = config.GetSection(SurfConextOptions.Section).Get<SurfConextOptions>();
 
         if (string.IsNullOrEmpty(options?.BaseUrl))
