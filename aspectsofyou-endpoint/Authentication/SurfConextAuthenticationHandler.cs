@@ -19,17 +19,20 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         UrlEncoder encoder,
         IHttpClientFactory httpClientFactory,
         IMemoryCache cache,
-        SurfConextJwtValidator jwtValidator)
+        SurfConextJwtValidator jwtValidator,
+        SurfConextUserInfoEnricher userInfoEnricher)
         : base(options, logger, encoder)
     {
         this.httpClient = httpClientFactory.CreateClient(SchemeName);
         this.cache = cache;
         this.jwtValidator = jwtValidator;
+        this.userInfoEnricher = userInfoEnricher;
     }
 
     private readonly HttpClient httpClient;
     private readonly IMemoryCache cache;
     private readonly SurfConextJwtValidator jwtValidator;
+    private readonly SurfConextUserInfoEnricher userInfoEnricher;
     private static readonly int CacheExpirationMinutes = 10;
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -86,6 +89,8 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
 
         if (identityError is not null)
             return AuthenticationFailed(identityError);
+
+        principal = await userInfoEnricher.EnrichAsync(principal, bearerToken, Context.RequestAborted);
 
         Logger.LogDebug(
             "SURFconext authentication succeeded for {Path} via {AuthMethod}",

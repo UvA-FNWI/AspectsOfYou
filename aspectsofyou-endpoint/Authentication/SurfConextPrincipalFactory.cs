@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace UvA.AspectsOfYou.Endpoint.Authentication;
 
@@ -105,6 +106,33 @@ internal static class SurfConextPrincipalFactory
         }
 
         AddIdentityClaims(claims, null, FindClaimValue(claims, "sub"));
+
+        return CreatePrincipal(claims);
+    }
+
+    internal static ClaimsPrincipal MergeUserInfoClaims(ClaimsPrincipal principal, JsonElement userInfo)
+    {
+        var claims = principal.Claims.Select(c => new Claim(c.Type, c.Value)).ToList();
+
+        var email = SurfConextClaimParsing.ReadEmail(userInfo);
+        if (!string.IsNullOrWhiteSpace(email) &&
+            string.IsNullOrWhiteSpace(FindClaimValue(claims, ClaimTypes.Email)))
+        {
+            claims.Add(new Claim(ClaimTypes.Email, email));
+        }
+
+        var name = SurfConextClaimParsing.ReadName(userInfo);
+        if (!string.IsNullOrWhiteSpace(name) &&
+            string.IsNullOrWhiteSpace(FindClaimValue(claims, ClaimTypes.Name)))
+        {
+            claims.Add(new Claim(ClaimTypes.Name, name));
+        }
+
+        AddIsMemberOfClaims(claims, SurfConextClaimParsing.ReadIsMemberOf(userInfo).ToArray());
+        AddIdentityClaims(
+            claims,
+            SurfConextClaimParsing.ReadUids(userInfo).ToArray(),
+            SurfConextClaimParsing.ReadSub(userInfo) ?? FindClaimValue(claims, "sub"));
 
         return CreatePrincipal(claims);
     }

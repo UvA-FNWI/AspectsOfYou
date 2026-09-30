@@ -57,6 +57,7 @@ function readIsMemberOfFromObject(source) {
     if (
       normalizedKey === "is_member_of" ||
       normalizedKey === "ismemberof" ||
+      normalizedKey === "edumember_is_member_of" ||
       normalizedKey.includes("ismemberof")
     ) {
       appendMembershipValue(memberships, value);
@@ -87,7 +88,18 @@ export function readIsMemberOfClaims(user) {
   return [...new Set(memberships)];
 }
 
+function matchesRequiredMembership(membership, requiredMemberOf) {
+  if (membership === requiredMemberOf) return true;
+
+  const requiredSuffix = requiredMemberOf.split(":").pop();
+  if (!requiredSuffix) return false;
+
+  if (membership === requiredSuffix) return true;
+  if (requiredMemberOf.endsWith(`:${membership}`)) return true;
+  return membership.includes(requiredSuffix);
+}
+
 export function isAdminInviteMember(user) {
   const memberships = readIsMemberOfClaims(user);
-  return memberships.some((value) => value === ADMIN_INVITE_MEMBER_OF);
+  return memberships.some((value) => matchesRequiredMembership(value, ADMIN_INVITE_MEMBER_OF));
 }

@@ -29,6 +29,7 @@ public static class SurfConextExtensions
         });
 
         services.AddSingleton<SurfConextJwtValidator>();
+        services.AddSurfConextUserInfoClient(options!);
 
         return services;
     }
