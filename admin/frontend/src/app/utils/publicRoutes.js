@@ -35,26 +35,53 @@ function decodeJwtPayload(token) {
   }
 }
 
-export function readIsMemberOfClaims(profile, accessTokenPayload) {
-  const sources = [profile, accessTokenPayload].filter(Boolean);
+function appendMembershipValue(memberships, value) {
+  if (typeof value === "string" && value.trim()) {
+    memberships.push(value.trim());
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      appendMembershipValue(memberships, item);
+    }
+  }
+}
+
+function readIsMemberOfFromObject(source) {
   const memberships = [];
+  if (!source || typeof source !== "object") return memberships;
 
-  for (const source of sources) {
-    const raw =
-      source.is_member_of ??
-      source.isMemberOf ??
-      source["urn:mace:dir:attribute-def:isMemberOf"];
-
-    if (!raw) continue;
-    memberships.push(...(Array.isArray(raw) ? raw : [raw]));
+  for (const [key, value] of Object.entries(source)) {
+    const normalizedKey = key.toLowerCase();
+    if (
+      normalizedKey === "is_member_of" ||
+      normalizedKey === "ismemberof" ||
+      normalizedKey.includes("ismemberof")
+    ) {
+      appendMembershipValue(memberships, value);
+    }
   }
 
   return memberships;
 }
 
+export function readIsMemberOfClaims(user) {
+  const memberships = [];
+  const sources = [
+    user?.profile,
+    decodeJwtPayload(user?.access_token),
+    decodeJwtPayload(user?.id_token),
+  ];
+
+  for (const source of sources) {
+    memberships.push(...readIsMemberOfFromObject(source));
+  }
+
+  return [...new Set(memberships)];
+}
+
 export function isAdminInviteMember(user) {
-  const tokenPayload =
-    decodeJwtPayload(user?.access_token) ?? decodeJwtPayload(user?.id_token);
-  const memberships = readIsMemberOfClaims(user?.profile, tokenPayload);
+  const memberships = readIsMemberOfClaims(user);
   return memberships.some((value) => value === ADMIN_INVITE_MEMBER_OF);
 }

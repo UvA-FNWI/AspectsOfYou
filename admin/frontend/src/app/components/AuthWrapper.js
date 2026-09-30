@@ -86,11 +86,15 @@ function AdminAuthHandler({ children }) {
           textAlign: "center",
         }}
       >
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 600 }}>Admin workspace</h1>
+        <h1 style={{ fontSize: "1.25rem", fontWeight: 600 }}>No administrator access</h1>
         <p style={{ maxWidth: "32rem" }}>
-          You are signed in with SURFconext. Managing surveys is limited to invited administrators
-          (via the <code>isMemberOf</code> invite group). You can still use the public survey and
-          display pages without admin access.
+          You are signed in with SURFconext, but this account is not in the AspectsOfYou
+          administrator invite list. Creating and managing surveys is only available to invited
+          admins. You can still fill in the survey or open the public displays below.
+        </p>
+        <p style={{ maxWidth: "32rem", fontSize: "0.875rem", color: "#4b5563" }}>
+          If you should have access, accept the SURFconext Invite e-mail for AspectsOfYou or ask
+          the application owner to add you to the invite group, then sign out and sign in again.
         </p>
         <p style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
           <a href="/fillinthesurvey">Fill in the survey</a>
