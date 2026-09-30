@@ -26,6 +26,8 @@ public static class SurfConextExtensions
                 $"Basic {Convert.ToBase64String(Encoding.ASCII.GetBytes($"{options.ClientId}:{options.ClientSecret}"))}");
         });
 
+        services.AddSingleton<SurfConextJwtValidator>();
+
         return services;
     }
 

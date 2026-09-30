@@ -13,4 +13,13 @@ public class SurfConextOptions : AuthenticationSchemeOptions
     /// SURFconext Invite isMemberOf value required for admin API access.
     /// </summary>
     public string? AdminInviteMemberOf { get; set; }
+
+    /// <summary>
+    /// Allowed JWT audiences for browser-issued access tokens. When empty, audience is not validated.
+    /// </summary>
+    public string[] JwtValidAudiences { get; set; } =
+    [
+        "aspectsofyou.datanose.nl",
+        "api.aspectsofyou.datanose.nl"
+    ];
 }

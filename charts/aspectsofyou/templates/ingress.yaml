@@ -13,17 +13,17 @@ spec:
     - host: "{{ .Values.hostname }}"
       http:
         paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: aspectsofyou-frontend
-                port:
-                  number: 80
           - path: /api
             pathType: Prefix
             backend:
               service:
                 name: aspectsofyou-endpoint
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aspectsofyou-frontend
                 port:
                   number: 80

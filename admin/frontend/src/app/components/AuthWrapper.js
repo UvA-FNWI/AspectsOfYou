@@ -4,6 +4,10 @@ import { AuthProvider, useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isAdminInviteMember, isPublicAppRoute } from "../utils/publicRoutes";
+import { getOidcBearerToken } from "../utils/oidcTokens";
+
+const oidcResource =
+  process.env.NEXT_PUBLIC_OIDC_RESOURCE || "api.aspectsofyou.datanose.nl";
 
 const oidcConfig = {
   authority: process.env.NEXT_PUBLIC_OIDC_AUTHORITY || "https://connect.surfconext.nl",
@@ -15,6 +19,8 @@ const oidcConfig = {
     process.env.NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI ||
     (typeof window !== "undefined" ? window.location.origin : ""),
   scope: process.env.NEXT_PUBLIC_OIDC_SCOPE || "openid profile email",
+  extraQueryParams: { resource: oidcResource },
+  extraTokenParams: { resource: oidcResource },
   onSigninCallback: () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   },
@@ -55,7 +61,7 @@ function AdminAuthHandler({ children }) {
     );
   }
 
-  if (!auth.user?.access_token) {
+  if (!getOidcBearerToken(auth.user)) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         Loading access token...

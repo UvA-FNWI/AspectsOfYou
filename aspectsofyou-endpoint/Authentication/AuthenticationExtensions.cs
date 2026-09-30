@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
+
 namespace UvA.AspectsOfYou.Endpoint.Authentication;
 
 public static class AuthenticationExtensions
@@ -6,6 +9,7 @@ public static class AuthenticationExtensions
         IConfiguration configuration)
     {
         services.AddSurfConextServices(configuration);
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, ProblemDetailsAuthorizationMiddlewareResultHandler>();
 
         services
             .AddAuthentication(SurfConextAuthenticationHandler.SchemeName)
