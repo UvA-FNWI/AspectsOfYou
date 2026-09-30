@@ -24,12 +24,7 @@ public static class AuthenticationExtensions
                 policy.RequireAssertion(context =>
                 {
                     var requiredMemberOf = configuration[$"{SurfConextOptions.Section}:AdminInviteMemberOf"];
-                    if (string.IsNullOrWhiteSpace(requiredMemberOf))
-                        return false;
-
-                    return context.User.Claims
-                        .Where(c => c.Type == SurfConextClaimTypes.IsMemberOf)
-                        .Any(c => string.Equals(c.Value, requiredMemberOf, StringComparison.Ordinal));
+                    return SurfConextAdminAuthorization.IsInviteAdmin(context.User, requiredMemberOf);
                 });
             });
         });

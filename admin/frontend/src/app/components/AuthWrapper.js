@@ -3,8 +3,9 @@
 import { AuthProvider, useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { isAdminInviteMember, isPublicAppRoute } from "../utils/publicRoutes";
+import { isPublicAppRoute } from "../utils/publicRoutes";
 import { getOidcBearerToken, resolveOidcResource } from "../utils/oidcTokens";
+import { resolveAdminAccess } from "../utils/adminAccess";
 
 const oidcResource = resolveOidcResource();
 
@@ -18,6 +19,7 @@ const oidcConfig = {
     process.env.NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI ||
     (typeof window !== "undefined" ? window.location.origin : ""),
   scope: process.env.NEXT_PUBLIC_OIDC_SCOPE || "openid profile email",
+  loadUserInfo: true,
   ...(oidcResource
     ? {
         extraQueryParams: { resource: oidcResource },
@@ -36,6 +38,7 @@ function PublicRoute({ children }) {
 function AdminAuthHandler({ children }) {
   const auth = useAuth();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const [adminAccess, setAdminAccess] = useState("loading");
 
   useEffect(() => {
     if (!auth.isLoading && !auth.isAuthenticated && !hasCheckedAuth && !auth.activeNavigator) {
@@ -43,6 +46,24 @@ function AdminAuthHandler({ children }) {
       setHasCheckedAuth(true);
     }
   }, [auth, hasCheckedAuth]);
+
+  useEffect(() => {
+    if (!auth.isAuthenticated || !getOidcBearerToken(auth.user)) {
+      setAdminAccess("loading");
+      return;
+    }
+
+    let cancelled = false;
+
+    resolveAdminAccess(auth.user).then((result) => {
+      if (cancelled) return;
+      setAdminAccess(result.isAdmin ? "granted" : "denied");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.isAuthenticated, auth.user]);
 
   if (auth.isLoading) {
     return (
@@ -72,7 +93,15 @@ function AdminAuthHandler({ children }) {
     );
   }
 
-  if (!isAdminInviteMember(auth.user)) {
+  if (adminAccess === "loading") {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        Checking administrator access...
+      </div>
+    );
+  }
+
+  if (adminAccess === "denied") {
     return (
       <div
         style={{

@@ -8,6 +8,13 @@ namespace UvA.AspectsOfYou.Endpoint.Authentication;
 public sealed class ProblemDetailsAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewareResultHandler
 {
     private readonly AuthorizationMiddlewareResultHandler fallback = new();
+    private readonly ILogger<ProblemDetailsAuthorizationMiddlewareResultHandler> logger;
+
+    public ProblemDetailsAuthorizationMiddlewareResultHandler(
+        ILogger<ProblemDetailsAuthorizationMiddlewareResultHandler> logger)
+    {
+        this.logger = logger;
+    }
 
     public async Task HandleAsync(
         RequestDelegate next,
@@ -17,6 +24,11 @@ public sealed class ProblemDetailsAuthorizationMiddlewareResultHandler : IAuthor
     {
         if (authorizeResult.Challenged)
         {
+            logger.LogInformation(
+                "Authorization challenged for {Path}: {Detail}",
+                context.Request.Path.Value,
+                BuildChallengeDetail(context));
+
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsJsonAsync(
                 new ProblemDetails
@@ -32,6 +44,12 @@ public sealed class ProblemDetailsAuthorizationMiddlewareResultHandler : IAuthor
 
         if (authorizeResult.Forbidden)
         {
+            var memberships = SurfConextAdminAuthorization.GetMemberships(context.User).ToArray();
+            logger.LogInformation(
+                "Authorization forbidden for {Path}: authenticated user lacks required invite membership. Memberships={Memberships}",
+                context.Request.Path.Value,
+                memberships.Length == 0 ? "(none)" : string.Join(", ", memberships));
+
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             await context.Response.WriteAsJsonAsync(
                 new ProblemDetails

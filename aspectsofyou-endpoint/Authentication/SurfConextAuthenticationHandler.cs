@@ -57,9 +57,11 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         ClaimsPrincipal? principal = await jwtValidator.ValidateAccessTokenAsync(
             bearerToken,
             Context.RequestAborted);
+        var authMethod = "jwt";
 
         if (principal is null)
         {
+            authMethod = "introspection";
             var resp = await ValidateSurfBearerToken(bearerToken);
             if (resp is null)
                 return AuthenticationFailed("token validation failed");
@@ -73,6 +75,11 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         var identityError = SurfConextPrincipalFactory.ValidateRequiredIdentity(principal);
         if (identityError is not null)
             return AuthenticationFailed(identityError);
+
+        Logger.LogDebug(
+            "SURFconext authentication succeeded for {Path} via {AuthMethod}",
+            Context.Request.Path.Value,
+            authMethod);
 
         cache.Set(cacheKey, principal,
             new MemoryCacheEntryOptions
@@ -99,6 +106,10 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
     private AuthenticateResult AuthenticationFailed(string detail)
     {
         Context.Items[SurfConextErrorItemKey] = detail;
+        Logger.LogInformation(
+            "SURFconext authentication failed for {Path}: {Reason}",
+            Context.Request.Path.Value,
+            detail);
         return AuthenticateResult.Fail(detail);
     }
 

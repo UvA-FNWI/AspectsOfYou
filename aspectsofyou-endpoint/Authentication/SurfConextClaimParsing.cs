@@ -25,7 +25,29 @@ internal static class SurfConextClaimParsing
         }
     }
 
-    internal static IEnumerable<string> ReadIsMemberOf(JsonElement root) => ParseIsMemberOfProperty(root);
+    internal static IEnumerable<string> ReadIsMemberOf(JsonElement root)
+    {
+        foreach (var value in ParseIsMemberOfProperty(root))
+            yield return value;
+
+        foreach (var value in ParseInviteUrnValues(root))
+            yield return value;
+    }
+
+    private static IEnumerable<string> ParseInviteUrnValues(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+            yield break;
+
+        foreach (var property in root.EnumerateObject())
+        {
+            foreach (var value in ParseStringOrArray(property.Value))
+            {
+                if (value.StartsWith("urn:mace:surf.nl:invite", StringComparison.Ordinal))
+                    yield return value;
+            }
+        }
+    }
 
     internal static IEnumerable<string> ReadUids(JsonElement root)
     {
