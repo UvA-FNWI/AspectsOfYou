@@ -10,7 +10,8 @@ public sealed class SurfConextJwtValidator
 {
     private readonly IOptionsMonitor<SurfConextOptions> optionsMonitor;
     private readonly ILogger<SurfConextJwtValidator> logger;
-    private readonly ConfigurationManager<OpenIdConnectConfiguration> configurationManager;
+    private ConfigurationManager<OpenIdConnectConfiguration>? configurationManager;
+    private string? configurationManagerBaseUrl;
 
     public SurfConextJwtValidator(
         IOptionsMonitor<SurfConextOptions> optionsMonitor,
@@ -18,11 +19,6 @@ public sealed class SurfConextJwtValidator
     {
         this.optionsMonitor = optionsMonitor;
         this.logger = logger;
-
-        var baseUrl = optionsMonitor.CurrentValue.BaseUrl!.TrimEnd('/');
-        configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-            $"{baseUrl}/oidc/.well-known/openid-configuration",
-            new OpenIdConnectConfigurationRetriever());
     }
 
     internal async Task<System.Security.Claims.ClaimsPrincipal?> ValidateAccessTokenAsync(
@@ -34,6 +30,7 @@ public sealed class SurfConextJwtValidator
 
         try
         {
+            var configurationManager = GetConfigurationManager();
             var options = optionsMonitor.CurrentValue;
             var configuration = await configurationManager.GetConfigurationAsync(cancellationToken);
             var audiences = options.JwtValidAudiences?
@@ -61,6 +58,29 @@ public sealed class SurfConextJwtValidator
             logger.LogDebug(ex, "JWT access token validation failed.");
             return null;
         }
+    }
+
+    private ConfigurationManager<OpenIdConnectConfiguration> GetConfigurationManager()
+    {
+        var baseUrl = optionsMonitor.CurrentValue.BaseUrl?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException(
+                $"Missing {SurfConextOptions.Section}:BaseUrl configuration for JWT validation.");
+        }
+
+        if (configurationManager is not null &&
+            string.Equals(configurationManagerBaseUrl, baseUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return configurationManager;
+        }
+
+        configurationManagerBaseUrl = baseUrl;
+        configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            $"{baseUrl}/oidc/.well-known/openid-configuration",
+            new OpenIdConnectConfigurationRetriever());
+
+        return configurationManager;
     }
 
     private static JwtSecurityToken? TryValidate(
