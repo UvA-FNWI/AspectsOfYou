@@ -96,8 +96,14 @@ internal static class SurfConextClaimParsing
 
     internal static string? ReadEmail(JsonElement root)
     {
-        if (root.TryGetProperty("email", out var emailElement) && emailElement.ValueKind == JsonValueKind.String)
-            return emailElement.GetString();
+        foreach (var propertyName in new[] { "email", "mail" })
+        {
+            if (root.TryGetProperty(propertyName, out var emailElement) &&
+                emailElement.ValueKind == JsonValueKind.String)
+            {
+                return emailElement.GetString();
+            }
+        }
 
         return null;
     }

@@ -73,6 +73,17 @@ public class SurfConextAuthenticationHandler : AuthenticationHandler<SurfConextO
         }
 
         var identityError = SurfConextPrincipalFactory.ValidateRequiredIdentity(principal);
+        if (identityError is not null && authMethod == "jwt")
+        {
+            var resp = await ValidateSurfBearerToken(bearerToken);
+            if (resp is { Active: true })
+            {
+                principal = SurfConextPrincipalFactory.CreateFromIntrospection(resp);
+                authMethod = "introspection-after-jwt";
+                identityError = SurfConextPrincipalFactory.ValidateRequiredIdentity(principal);
+            }
+        }
+
         if (identityError is not null)
             return AuthenticationFailed(identityError);
 

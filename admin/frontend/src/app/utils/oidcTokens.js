@@ -1,8 +1,50 @@
 'use client';
 
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") return null;
+
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function tokenClaimScore(token) {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return token ? 1 : 0;
+
+  let score = 0;
+  if (payload.email || payload.mail) score += 2;
+  if (payload.is_member_of || payload.isMemberOf) score += 3;
+  if (payload.sub) score += 1;
+
+  for (const value of Object.values(payload)) {
+    if (typeof value === "string" && value.startsWith("urn:mace:surf.nl:invite")) {
+      score += 3;
+      break;
+    }
+  }
+
+  return score;
+}
+
+/**
+ * Prefer the token that carries profile/invite claims (usually id_token) for API calls.
+ */
 export function getOidcBearerToken(user) {
   if (!user) return null;
-  return user.access_token ?? user.id_token ?? null;
+
+  const candidates = [user.access_token, user.id_token].filter(Boolean);
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  return [...candidates].sort((a, b) => tokenClaimScore(b) - tokenClaimScore(a))[0];
 }
 
 /**
@@ -27,7 +69,6 @@ export function resolveOidcResource() {
       return null;
     }
 
-    // Resource identifiers are typically origin-only for SURFconext API clients.
     return url.origin;
   } catch {
     return null;

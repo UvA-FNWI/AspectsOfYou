@@ -60,6 +60,20 @@ internal static class SurfConextPrincipalFactory
     internal static ClaimsPrincipal CreateFromValidatedJwt(JwtSecurityToken jwt, string rawToken)
     {
         var claims = jwt.Claims.Select(c => new Claim(c.Type, c.Value)).ToList();
+
+        if (string.IsNullOrWhiteSpace(FindClaimValue(claims, ClaimTypes.Email)))
+        {
+            foreach (var claim in jwt.Claims)
+            {
+                if (claim.Type is ClaimTypes.Email or "email" or "mail" &&
+                    !string.IsNullOrWhiteSpace(claim.Value))
+                {
+                    claims.Add(new Claim(ClaimTypes.Email, claim.Value));
+                    break;
+                }
+            }
+        }
+
         AddIsMemberOfClaims(
             claims,
             claims
@@ -97,10 +111,11 @@ internal static class SurfConextPrincipalFactory
 
     internal static string? ValidateRequiredIdentity(ClaimsPrincipal principal)
     {
-        if (string.IsNullOrWhiteSpace(principal.FindFirst(ClaimTypes.Email)?.Value))
-            return "missing email";
+        var hasIdentifier =
+            !string.IsNullOrWhiteSpace(principal.FindFirst(UvaClaimTypes.UvanetId)?.Value) ||
+            !string.IsNullOrWhiteSpace(principal.FindFirst("sub")?.Value);
 
-        if (string.IsNullOrWhiteSpace(principal.FindFirst(UvaClaimTypes.UvanetId)?.Value))
+        if (!hasIdentifier)
             return "missing user identifier (uid or sub)";
 
         return null;
