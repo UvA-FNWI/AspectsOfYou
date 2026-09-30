@@ -5,6 +5,13 @@ namespace UvA.AspectsOfYou.Endpoint.Authentication;
 
 internal static class SurfConextClaimParsing
 {
+    internal static readonly string[] IsMemberOfPropertyNames =
+    [
+        "is_member_of",
+        "isMemberOf",
+        "edumember_is_member_of",
+    ];
+
     internal static bool TryReadJwtPayload(string bearerToken, out JsonElement root)
     {
         root = default;
@@ -170,7 +177,7 @@ internal static class SurfConextClaimParsing
 
     private static IEnumerable<string> ParseIsMemberOfProperty(JsonElement root)
     {
-        foreach (var propertyName in new[] { "is_member_of", "isMemberOf" })
+        foreach (var propertyName in IsMemberOfPropertyNames)
         {
             if (!root.TryGetProperty(propertyName, out var element))
                 continue;
