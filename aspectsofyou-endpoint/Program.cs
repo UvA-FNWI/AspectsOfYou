@@ -1080,10 +1080,19 @@ app.MapPost("/api/displayslots/{slotName}", async (AspectContext db, string slot
     // Validate that view exists if provided
     if (assignment.ViewId.HasValue)
     {
-        var viewExists = await db.ViewSurveys.AnyAsync(v => v.Id == assignment.ViewId.Value);
-        if (!viewExists)
+        var view = await db.ViewSurveys
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == assignment.ViewId.Value);
+        if (view == null)
             return Results.BadRequest(new { message = "View not found" });
+
+        if (assignment.SurveyId.HasValue && view.SurveyId != assignment.SurveyId.Value)
+            return Results.BadRequest(new { message = "View does not belong to the selected survey" });
     }
+
+    var displaySlotNames = new[] { "display1", "display2", "display3" };
+    if (displaySlotNames.Contains(slotName, StringComparer.OrdinalIgnoreCase) && !assignment.ViewId.HasValue)
+        return Results.BadRequest(new { message = "Display slots require a view assignment" });
 
     slot.SurveyId = assignment.SurveyId;
     slot.ViewId = assignment.ViewId;
