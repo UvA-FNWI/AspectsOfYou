@@ -743,7 +743,11 @@ Select a certain survey id.
 
 Same as previous API call, but now with one specific survey
 */
-app.MapGet("/api/surveys/{id}", async (AspectContext db, Guid id) =>
+app.MapGet("/api/surveys/{id}", async (
+    AspectContext db,
+    Guid id,
+    HttpContext context,
+    IConfiguration configuration) =>
 {
     var survey = await db.Surveys
         .Include(s => s.Questions)
@@ -772,7 +776,21 @@ app.MapGet("/api/surveys/{id}", async (AspectContext db, Guid id) =>
         })
         .FirstOrDefaultAsync();
 
-    return survey is null ? Results.NotFound() : Results.Ok(survey);
+    if (survey is null)
+    {
+        return Results.NotFound();
+    }
+
+    var requiredMemberOf = configuration[$"{SurfConextOptions.Section}:AdminInviteMemberOf"];
+    var isAdmin = context.User.Identity?.IsAuthenticated == true
+        && SurfConextAdminAuthorization.IsInviteAdmin(context.User, requiredMemberOf);
+
+    if (!isAdmin && !survey.Live)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(survey);
 });
 
 /*
