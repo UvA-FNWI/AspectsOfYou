@@ -14,10 +14,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set release version
+        run: echo "VERSION=$(date '+0.1.%Y%m%d%H%M%S')" >> "$GITHUB_ENV"
+
       - name: Build backend container
         run: |
           set -euxo pipefail
-          docker build -f Dockerfile -t "fnwicr.azurecr.io/aspectsofyou-endpoint:latest" .
+          docker build -f Dockerfile \
+            -t "fnwicr.azurecr.io/aspectsofyou-endpoint:${VERSION}" \
+            -t "fnwicr.azurecr.io/aspectsofyou-endpoint:latest" \
+            .
+          docker push "fnwicr.azurecr.io/aspectsofyou-endpoint:${VERSION}"
           docker push "fnwicr.azurecr.io/aspectsofyou-endpoint:latest"
         working-directory: ./aspectsofyou-endpoint
 
@@ -27,10 +34,12 @@ jobs:
         run: |
           set -euxo pipefail
           docker build \
-          --build-arg NEXT_PUBLIC_DOTNET_API_URL="https://aspectsofyou.datanose.nl" \
-          -f Dockerfile \
-          -t "fnwicr.azurecr.io/aspectsofyou-frontend:latest" \
-          .
+            --build-arg NEXT_PUBLIC_DOTNET_API_URL="https://aspectsofyou.datanose.nl" \
+            -f Dockerfile \
+            -t "fnwicr.azurecr.io/aspectsofyou-frontend:${VERSION}" \
+            -t "fnwicr.azurecr.io/aspectsofyou-frontend:latest" \
+            .
+          docker push "fnwicr.azurecr.io/aspectsofyou-frontend:${VERSION}"
           docker push "fnwicr.azurecr.io/aspectsofyou-frontend:latest"
         working-directory: ./admin/frontend
 
@@ -39,7 +48,6 @@ jobs:
           UPDATER_SECRET: ${{ secrets.UPDATER_SECRET_K8S }}
         run: |
           set -euxo pipefail
-          export VERSION=$(date "+0.1.%Y%m%d%H%M%S")
           helm package --version "${VERSION}" --app-version "${VERSION}" charts/aspectsofyou
           helm push "aspectsofyou-${VERSION}.tgz" oci://fnwicr.azurecr.io/helm
           curl "https://k8s.datanose.nl/gitops-updater?name=aspectsofyou&secret=${UPDATER_SECRET}&version=${VERSION}"

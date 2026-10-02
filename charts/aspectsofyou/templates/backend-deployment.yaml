@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: aspectsofyou-endpoint
-          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
+          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag | default .Chart.AppVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.backend.port }}

@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: aspectsofyou-frontend
-          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag | default .Chart.AppVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.frontend.port }}
