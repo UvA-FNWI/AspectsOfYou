@@ -3,6 +3,7 @@ using UvA.AspectsOfYou.Endpoint.Authentication;
 using UvA.AspectsOfYou.Endpoint.Dtos;
 using UvA.AspectsOfYou.Endpoint.Endpoints;
 using UvA.AspectsOfYou.Endpoint.Entities;
+using UvA.AspectsOfYou.Endpoint.Moderation;
 /*
 TODO's: 1. add security
 
@@ -10,7 +11,7 @@ This file describes the API in order to communicate with the database
 */
 var builder = WebApplication.CreateBuilder(args);
 
-var bannedTerms = LoadBannedTerms(builder.Environment.ContentRootPath);
+var bannedTerms = BannedTerms.LoadFromContentRoot(builder.Environment.ContentRootPath);
 
 var configuredCorsOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -56,50 +57,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/api/auth/admin-status", (
-    HttpContext context,
-    IConfiguration configuration,
-    ILoggerFactory loggerFactory) =>
-{
-    var logger = loggerFactory.CreateLogger("SurfConextAdminAuth");
-
-    if (context.User.Identity?.IsAuthenticated != true)
-    {
-        logger.LogInformation(
-            "Admin status check for {Path}: not authenticated",
-            context.Request.Path.Value);
-
-        return Results.Json(
-            new { authenticated = false, isAdmin = false },
-            statusCode: StatusCodes.Status401Unauthorized);
-    }
-
-    var requiredMemberOf = configuration[$"{SurfConextOptions.Section}:AdminInviteMemberOf"];
-    var memberships = SurfConextAdminAuthorization.GetMemberships(context.User).ToArray();
-    var isAdmin = SurfConextAdminAuthorization.IsInviteAdmin(context.User, requiredMemberOf);
-
-    if (isAdmin)
-    {
-        logger.LogDebug(
-            "Admin status check for {Path}: granted (membership matched)",
-            context.Request.Path.Value);
-    }
-    else
-    {
-        logger.LogInformation(
-            "Admin status check for {Path}: denied. Required={RequiredMemberOf} Memberships={Memberships}",
-            context.Request.Path.Value,
-            requiredMemberOf ?? "(not configured)",
-            memberships.Length == 0 ? "(none)" : string.Join(", ", memberships));
-    }
-
-    return Results.Ok(new
-    {
-        authenticated = true,
-        isAdmin,
-        memberships
-    });
-});
+app.MapAuthEndpoints();
 
 // Makes the connection to the database more robust (implemented after failing)
 using (var scope = app.Services.CreateScope())
@@ -368,34 +326,7 @@ app.MapPost("/api/surveys/{id}/status", async (AspectContext db, Guid id, Update
     return Results.Ok(new { surveyId = survey.SurveyId, live = survey.Live, editing = survey.Editing });
 }).RequireAuthorization(AuthorizationPolicies.Admin);
 
-/*
-TODO: only save the date a user completed the servey
-
-Adds a response of a user to the Responses database
-*/
-app.MapPost("/api/responses", async (AspectContext db, CreateResponseDto responseDto) =>
-{
-    if (!string.IsNullOrWhiteSpace(responseDto.Additional) &&
-        ContainsBannedPhrase(responseDto.Additional, bannedTerms))
-    {
-        return Results.BadRequest(new { message = "Additional text contains disallowed terms." });
-    }
-
-    var response = new Response
-    {
-        ResponseId = Guid.NewGuid(),
-        Date = DateOnly.FromDateTime(DateTime.UtcNow),
-        Additional = responseDto.Additional,
-        SurveyId = responseDto.SurveyId,
-        QuestionId = responseDto.QuestionId,
-        AnswerId = responseDto.AnswerId
-    };
-
-    db.Responses.Add(response);
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/api/responses/{response.ResponseId}", response.ResponseId);
-});
+app.MapResponseEndpoints(bannedTerms);
 
 /*
 Lists all surveys in the database, with their questions and answers
@@ -681,8 +612,6 @@ app.MapGet("/api/surveys/{surveyId}/responseCounts", async (AspectContext db, Gu
 });
 
 
-app.MapGet("/health", () => Results.Ok("Healthy"));
-
 /*
 Deletes a survey from the database
 */
@@ -725,46 +654,3 @@ app.MapViewSurveyEndpoints();
 app.MapDisplaySlotEndpoints();
 
 app.Run();
-
-static HashSet<string> LoadBannedTerms(string contentRoot)
-{
-    var sourcesDirectory = Path.Combine(contentRoot, "sources");
-    var terms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-    foreach (var fileName in new[] { "nl.txt", "en.txt" })
-    {
-        var path = Path.Combine(sourcesDirectory, fileName);
-
-        if (!File.Exists(path))
-        {
-            Console.WriteLine($"Warning: banned terms file not found: {path}");
-            continue;
-        }
-
-        foreach (var line in File.ReadAllLines(path))
-        {
-            var term = line.Trim();
-
-            if (string.IsNullOrWhiteSpace(term))
-            {
-                continue;
-            }
-
-            terms.Add(term);
-        }
-    }
-
-    return terms;
-}
-
-static bool ContainsBannedPhrase(string? input, HashSet<string> bannedTerms)
-{
-    if (string.IsNullOrWhiteSpace(input))
-    {
-        return false;
-    }
-
-    var normalized = input.Trim();
-
-    return bannedTerms.Contains(normalized);
-}
