@@ -8,7 +8,7 @@ Aspects of You is a multi-component application for creating surveys and visuali
 
 **Requirements**
 - Docker and Docker Compose
-- For local development: Node.js (16+), npm or yarn, and .NET SDK for the `aspectsofyou-endpoint` service.
+- For local development: Node.js (24+), npm or yarn, and .NET SDK for the `aspectsofyou-endpoint` service.
 
 **Contents**
 - **`admin/`**: Admin UI and admin backend code (React frontend + Node backend).
