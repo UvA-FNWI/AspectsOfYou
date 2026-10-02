@@ -3,9 +3,55 @@ name: build and push container
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: aspectsofyou-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: admin/frontend/package-lock.json
+
+      - name: Frontend lint and build
+        env:
+          NEXT_PUBLIC_DOTNET_API_URL: https://aspectsofyou.datanose.nl
+        working-directory: admin/frontend
+        run: |
+          set -euxo pipefail
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Backend build
+        working-directory: aspectsofyou-endpoint
+        run: |
+          set -euxo pipefail
+          dotnet restore UvA.AspectsOfYou.Endpoint.csproj
+          dotnet build UvA.AspectsOfYou.Endpoint.csproj -c Release --no-restore
+
   build:
+    needs: verify
+    if: github.event_name == 'push'
     runs-on: self-hosted
 
     steps:
