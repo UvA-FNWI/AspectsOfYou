@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import FillSurvey from '../../components_survey_taking/FillSurvey';
 import { useApiFetch } from '../../utils/useApiFetch';
 
-export default function SurveyPage({ params }) {
+export default function SurveyPage() {
   const fetch = useApiFetch();
+  const params = useParams();
+  const id = params?.id;
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const router = useRouter();
 
-  const { id } = params;
-
   useEffect(() => {
+    if (!id) return;
+
     async function fetchSurvey() {
-      console.log(id)
       try { // Fetches questions from the survey
         const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
         const response = await fetch(`${apiUrl}/api/surveys/${id}`);
@@ -47,13 +48,11 @@ export default function SurveyPage({ params }) {
     }
 
     fetchSurvey();
-  }, [id, router]);
+  }, [id, router, fetch]);
 
   // Handle submission of each individual answer such that we cannot seperate users
   const uploadAnswerToDatabase = async (questionId, answer) => {
     const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
-
-    console.log(id)
 
     // If multiple answers are submitted (multiple choice), upload them all individually, such that we cannot link users
     if (Array.isArray(answer)) {

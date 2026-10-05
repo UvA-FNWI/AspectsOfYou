@@ -5,7 +5,7 @@ The page where the visualization of a single survey is shown
 */
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../components/ShowAnswers';
 import { useAuthenticatedFetch } from '../../utils/useAuthenticatedFetch';
 
@@ -57,8 +57,10 @@ function regroupByQuestion(responses) {
   return Object.values(grouped);
 }
 
-export default function SurveyPage({ params }) {
+export default function SurveyPage() {
   const fetch = useAuthenticatedFetch();
+  const params = useParams();
+  const id = params?.id;
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,7 +82,6 @@ export default function SurveyPage({ params }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { id } = params;
   const viewId = searchParams.get('viewId');
 
   const markDirty = () => {
@@ -106,6 +107,8 @@ export default function SurveyPage({ params }) {
   };
 
   useEffect(() => {
+    if (!id) return;
+
     async function fetchSurvey() {
       // Gets grouped answers per question
       try {
@@ -216,7 +219,7 @@ export default function SurveyPage({ params }) {
     }
 
     fetchSurvey();
-  }, [id]);
+  }, [id, viewId, fetch]);
 
   useEffect(() => {
     const handlePopState = (event) => {

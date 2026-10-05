@@ -6,7 +6,7 @@ Rendered at /survey/[id]/preview
 */
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import ShowAnswers from '../../../components/ShowAnswers';
 import ImageRow from '@/app/components/ImageRow';
 import { useApiFetch } from '../../../utils/useApiFetch';
@@ -44,8 +44,10 @@ function regroupByQuestion(responses) {
   return Object.values(grouped);
 }
 
-export default function SurveyPreviewPage({ params }) {
+export default function SurveyPreviewPage() {
   const fetch = useApiFetch();
+  const params = useParams();
+  const id = params?.id;
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,10 +77,11 @@ export default function SurveyPreviewPage({ params }) {
     }
   }, [searchParams]);
 
-  const { id } = params;
   const viewId = searchParams?.get('viewId');
 
   useEffect(() => {
+    if (!id) return;
+
     async function fetchSurvey() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
@@ -175,7 +178,7 @@ export default function SurveyPreviewPage({ params }) {
       }
     }
     fetchSurvey();
-  }, [id, searchParams]);
+  }, [id, viewId, fetch, searchParams]);
 
   if (loading) {
     return (
