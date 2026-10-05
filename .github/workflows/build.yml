@@ -33,7 +33,7 @@ jobs:
         working-directory: admin/frontend
         run: |
           set -euxo pipefail
-          npm ci
+          npm ci --no-audit --no-fund
           npm run lint
           npm run build
 

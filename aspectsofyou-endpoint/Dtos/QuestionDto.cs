@@ -3,7 +3,7 @@ namespace UvA.AspectsOfYou.Endpoint.Dtos;
 public class QuestionDto
 {
     public Guid QuestionId { get; set; }
-    public string QuestionText { get; set; }
+    public required string QuestionText { get; set; }
     public int QuestionType { get; set; }
     public bool AllowMultipleSelections { get; set; }
     public int OrderIndex { get; set; }

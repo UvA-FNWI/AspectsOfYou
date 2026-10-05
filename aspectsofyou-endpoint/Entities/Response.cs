@@ -11,11 +11,11 @@ public class Response
 
     //relations to other tables
     public Guid SurveyId { get; set; }
-    public Survey Survey { get; set; }
+    public Survey Survey { get; set; } = null!;
 
     public Guid QuestionId { get; set; }
-    public Question Question { get; set; }
+    public Question Question { get; set; } = null!;
 
     public Guid AnswerId { get; set; }
-    public Answer Answer { get; set; }
+    public Answer Answer { get; set; } = null!;
 }

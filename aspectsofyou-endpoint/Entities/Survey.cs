@@ -6,7 +6,7 @@ public class Survey
 {
     public Guid SurveyId { get; set; }
 
-    public string Title {get; set; }
+    public string Title { get; set; } = string.Empty;
 
     public bool Live { get; set; } = false;
 
