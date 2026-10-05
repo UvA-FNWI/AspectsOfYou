@@ -1,13 +1,30 @@
 services:
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "3003:3003"
+      - "5059:5059"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - admin-frontend
+      - aspectsofyou-endpoint
+    networks:
+      - forms-network
+
   admin-frontend:
     build:
       context: ./admin/frontend
       dockerfile: Dockerfile
-    ports:
-      - "3003:3000"
-    environment:
-      - NEXT_PUBLIC_DOTNET_API_URL=http://aspectsofyou-endpoint:8080
+      args:
+        NEXT_PUBLIC_DOTNET_API_URL: ${NEXT_PUBLIC_DOTNET_API_URL:-https://localhost:5059}
+        NEXT_PUBLIC_OIDC_REDIRECT_URI: ${NEXT_PUBLIC_OIDC_REDIRECT_URI:-https://localhost:3003}
+        NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI: ${NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI:-https://localhost:3003}
+    expose:
+      - "3000"
     depends_on:
       - aspectsofyou-endpoint
     networks:
@@ -15,15 +32,15 @@ services:
 
   aspectsofyou-endpoint:
     build: ./aspectsofyou-endpoint
-    ports:
-      - "5059:8080"
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry
-      - Cors__AllowedOrigins__0=http://localhost:3003
-      - Cors__AllowedOrigins__1=http://127.0.0.1:3003
+      - Cors__AllowedOrigins__0=https://localhost:3003
+      - Cors__AllowedOrigins__1=https://127.0.0.1:3003
     env_file:
       - .env
     networks:
@@ -50,6 +67,8 @@ services:
 
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:
 
 networks:
   forms-network:

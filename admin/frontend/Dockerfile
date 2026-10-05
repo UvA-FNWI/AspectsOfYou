@@ -1,4 +1,4 @@
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 
 FROM base AS deps
 WORKDIR /app
@@ -10,9 +10,13 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Accept build arg for API URL
+# NEXT_PUBLIC_* are inlined at build time (runtime env in compose does not change them).
 ARG NEXT_PUBLIC_DOTNET_API_URL
+ARG NEXT_PUBLIC_OIDC_REDIRECT_URI
+ARG NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI
 ENV NEXT_PUBLIC_DOTNET_API_URL=${NEXT_PUBLIC_DOTNET_API_URL}
+ENV NEXT_PUBLIC_OIDC_REDIRECT_URI=${NEXT_PUBLIC_OIDC_REDIRECT_URI}
+ENV NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI=${NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

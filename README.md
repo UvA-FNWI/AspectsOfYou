@@ -15,8 +15,8 @@ Aspects of You is an application for creating surveys, collecting responses, and
 ## Requirements
 
 - **Docker** and **Docker Compose** for the full local stack
-- **Node.js 24+** and npm for frontend development (`admin/frontend`)
-- **.NET 9 SDK** for API development (`aspectsofyou-endpoint`)
+- **Node.js 26+** and npm for frontend development (`admin/frontend`)
+- **.NET 10 SDK** for API development (`aspectsofyou-endpoint`)
 
 ## Run the full stack (Docker)
 
@@ -26,9 +26,11 @@ From the repository root:
 docker compose up --build -d
 ```
 
-- Frontend: [http://localhost:3003](http://localhost:3003) (mapped from container port 3000)
-- API: [http://localhost:5059](http://localhost:5059)
+- Frontend: [https://localhost:3003](https://localhost:3003) (TLS via Caddy in Compose)
+- API: [https://localhost:5059](https://localhost:5059)
 - Postgres: `localhost:5432` (user/database `strawberry` / `aspects` per `docker-compose.yml`)
+
+The first visit may show a certificate warning (Caddy local CA). Accept it for `localhost`, or register **`https://localhost:3003`** as a SURFconext redirect URI if admin sign-in is required locally.
 
 Stop and remove containers:
 

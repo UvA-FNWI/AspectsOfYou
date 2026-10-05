@@ -97,7 +97,7 @@ Below are the DTOs exposed/consumed by the endpoints (property types shown):
 
 ## Running Locally
 
-- Requirements: .NET SDK (matching project target, e.g. .NET 9.0), PostgreSQL (or other DB matching `UseNpgsql`).
+- Requirements: .NET SDK (matching project target, e.g. .NET 10), PostgreSQL (or other DB matching `UseNpgsql`).
 - Important environment variable / configuration:
 	- `ConnectionStrings:AspectContext` in `appsettings.json` (example uses Npgsql/Postgres).
 

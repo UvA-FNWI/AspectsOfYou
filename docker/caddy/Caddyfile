@@ -1,0 +1,14 @@
+# Local HTTPS (Caddy internal CA). Browser may prompt once to trust the certificate.
+{
+	auto_https disable_redirects
+}
+
+https://localhost:3003 {
+	tls internal
+	reverse_proxy admin-frontend:3000
+}
+
+https://localhost:5059 {
+	tls internal
+	reverse_proxy aspectsofyou-endpoint:8080
+}
