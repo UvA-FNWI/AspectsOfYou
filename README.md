@@ -75,8 +75,8 @@ API schema and DTO notes: `aspectsofyou-endpoint/README.md`.
 
 ## Production deployment (overview)
 
-Pushes to `main` build container images and a versioned Helm chart; GitOps (Argo CD) deploys from the chart in Azure Container Registry. Details are maintained in the `k8s-gitops` repository (`test/aspectsofyou.yaml`), not in this repo.
+Pushes to `main` build container images and a versioned Helm chart; GitOps (Argo CD) deploys from the chart in Azure Container Registry. The workflow notifies **gitops-updater**, which updates `test/aspectsofyou.yaml` in the `k8s-gitops` repository.
 
 ## CI
 
-Pull requests and pushes to `main` run lint/build checks on GitHub-hosted runners; merges to `main` trigger the self-hosted workflow that builds images and publishes the Helm chart.
+Pull requests and pushes to `main` run lint/build checks on GitHub-hosted runners; merges to `main` trigger the self-hosted workflow that builds images, publishes the Helm chart, and calls gitops-updater.
