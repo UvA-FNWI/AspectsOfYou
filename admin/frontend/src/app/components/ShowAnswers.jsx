@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ShowCircle from './ShowCircle';
 import ShowBarplot from './ShowBarplot';
 import ShowWordCloudQuestion from './ShowWordCloudQuestion';
@@ -22,14 +22,14 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
 
   const baseTypeForQuestion = (question) => (question.questionType === 3 ? 'geochart' : 'circle');
 
-  const getViewListForQuestion = (question) => {
+  const getViewListForQuestion = useCallback((question) => {
     const fromMap = viewTypes?.[question.questionId];
     const list = Array.isArray(fromMap) ? fromMap.filter(Boolean) : [];
     if (list.length > 0) {
       return list.slice(0, 3);
     }
     return [baseTypeForQuestion(question)];
-  };
+  }, [viewTypes]);
 
   const updateViewTypesForQuestion = (question, updater) => {
     if (!setViewTypes || readOnly) return;
@@ -225,7 +225,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
   // Total "slots" — each question with n views counts as n slots
   const totalSlots = useMemo(() => {
     return renderedQuestions.reduce((sum, q) => sum + getViewListForQuestion(q).length, 0);
-  }, [renderedQuestions, viewTypes]);
+  }, [renderedQuestions, getViewListForQuestion]);
 
   // Compute the column count that maximises per-cell area for the viewport
   const optimalCols = useMemo(() => {
@@ -275,7 +275,7 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
     }));
   };
 
-  const recalcMaxHeight = () => {
+  const recalcMaxHeight = useCallback(() => {
     let tallest = 0;
     renderedQuestions.forEach((q) => {
       const el = cardRefs.current[q.questionId];
@@ -284,14 +284,14 @@ export default function ShowAnswers({ questions, setQuestions, viewTypes, setVie
       }
     });
     setMaxCardHeight(tallest || null);
-  };
+  }, [renderedQuestions]);
 
   useEffect(() => {
     const handleResize = () => recalcMaxHeight();
     recalcMaxHeight();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [renderedQuestions, viewTypes, readOnly, fillHeight]);
+  }, [recalcMaxHeight, viewTypes, readOnly, fillHeight]);
 
   const rootClass = fillHeight
     ? 'w-full h-full grid gap-2'
