@@ -588,10 +588,11 @@ export default function Home() {
                                   e.preventDefault();
                                   requestDeleteView(survey, view);
                                 }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:bg-red-50 transition-opacity p-1 rounded hover:bg-red-50"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50"
                                 title="Delete view"
+                                aria-label="Delete view"
                               >
-                                <img src="/icons/trash.svg" alt="" className="h-4 w-4 text-red-600" />
+                                <img src="/icons/trash.svg" alt="" className="h-5 w-5" />
                               </button>
                             )}
                           </div>
@@ -623,10 +624,11 @@ export default function Home() {
                                   e.preventDefault();
                                   requestDeleteView(survey, view);
                                 }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:bg-red-50 transition-opacity p-1 rounded hover:bg-red-50"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50"
                                 title="Delete view"
+                                aria-label="Delete view"
                               >
-                                <img src="/icons/trash.svg" alt="" className="h-4 w-4 text-red-600" />
+                                <img src="/icons/trash.svg" alt="" className="h-5 w-5" />
                               </button>
                             )}
                           </div>
@@ -647,11 +649,13 @@ export default function Home() {
                     {/* Delete button */}
                     <td className="px-4 py-4 text-center">
                       <button
+                        type="button"
                         onClick={() => requestDelete(survey)}
-                        className="opacity-60 hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-red-50"
+                        className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors"
                         title="Delete survey"
+                        aria-label={`Delete survey ${survey.title}`}
                       >
-                        <img src="/icons/trash.svg" alt="" className="h-5 w-5 text-red-600" />
+                        <img src="/icons/trash.svg" alt="" className="h-7 w-7" />
                       </button>
                     </td>
                   </tr>
