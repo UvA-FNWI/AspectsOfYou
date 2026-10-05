@@ -7,29 +7,29 @@ import { isPublicAppRoute } from "../utils/publicRoutes";
 import { getOidcBearerToken, resolveOidcResource } from "../utils/oidcTokens";
 import { resolveAdminAccess } from "../utils/adminAccess";
 
-const oidcResource = resolveOidcResource();
+function buildOidcConfig() {
+  const oidcResource = resolveOidcResource();
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
 
-const oidcConfig = {
-  authority: process.env.NEXT_PUBLIC_OIDC_AUTHORITY || "https://connect.surfconext.nl",
-  client_id: process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || "aspectsofyou.datanose.nl",
-  redirect_uri:
-    process.env.NEXT_PUBLIC_OIDC_REDIRECT_URI ||
-    (typeof window !== "undefined" ? window.location.origin : ""),
-  post_logout_redirect_uri:
-    process.env.NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI ||
-    (typeof window !== "undefined" ? window.location.origin : ""),
-  scope: process.env.NEXT_PUBLIC_OIDC_SCOPE || "openid profile email",
-  loadUserInfo: true,
-  ...(oidcResource
-    ? {
-        extraQueryParams: { resource: oidcResource },
-        extraTokenParams: { resource: oidcResource },
-      }
-    : {}),
-  onSigninCallback: () => {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  },
-};
+  return {
+    authority: process.env.NEXT_PUBLIC_OIDC_AUTHORITY || "https://connect.surfconext.nl",
+    client_id: process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || "aspectsofyou.datanose.nl",
+    redirect_uri: process.env.NEXT_PUBLIC_OIDC_REDIRECT_URI || origin,
+    post_logout_redirect_uri:
+      process.env.NEXT_PUBLIC_OIDC_POST_LOGOUT_REDIRECT_URI || origin,
+    scope: process.env.NEXT_PUBLIC_OIDC_SCOPE || "openid profile email",
+    loadUserInfo: true,
+    ...(oidcResource
+      ? {
+          extraQueryParams: { resource: oidcResource },
+          extraTokenParams: { resource: oidcResource },
+        }
+      : {}),
+    onSigninCallback: () => {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    },
+  };
+}
 
 function PublicRoute({ children }) {
   return <>{children}</>;
@@ -152,6 +152,8 @@ function RouteAwareAuth({ children }) {
 }
 
 export default function AuthWrapper({ children }) {
+  const [oidcConfig] = useState(() => buildOidcConfig());
+
   return (
     <AuthProvider {...oidcConfig}>
       <RouteAwareAuth>{children}</RouteAwareAuth>
