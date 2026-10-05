@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using UvA.AspectsOfYou.Endpoint.Entities;
 
 #nullable disable
 
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
+    [DbContext(typeof(AspectContext))]
+    [Migration("20260110100000_AddFunkySettingsToViewSurvey")]
     /// <inheritdoc />
     public partial class AddFunkySettingsToViewSurvey : Migration
     {

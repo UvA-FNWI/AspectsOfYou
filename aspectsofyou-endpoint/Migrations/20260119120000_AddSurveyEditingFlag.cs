@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace UvA.AspectsOfYou.Endpoint.Migrations
 {
+    // Superseded by 20260119182424_AddSurveyEditingFlagApply (registered migration). Kept for history only.
     public partial class AddSurveyEditingFlag : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -38,7 +38,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry
+      - ConnectionStrings__AspectContext=Host=postgres;Database=aspects;Username=strawberry;Password=strawberry;GSS Encryption Mode=Disable
       - Cors__AllowedOrigins__0=https://localhost:3003
       - Cors__AllowedOrigins__1=https://127.0.0.1:3003
     env_file:
