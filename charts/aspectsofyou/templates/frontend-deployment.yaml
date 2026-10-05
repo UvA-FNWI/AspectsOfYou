@@ -14,13 +14,15 @@ spec:
   revisionHistoryLimit: 3
   template:
     metadata:
+      annotations:
+        aspectsofyou.io/release: "{{ .Chart.AppVersion }}"
       labels:
         app: aspectsofyou-frontend
         component: frontend
     spec:
       containers:
         - name: aspectsofyou-frontend
-          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag | default .Chart.AppVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.frontend.port }}
@@ -31,3 +33,20 @@ spec:
               value: "{{ .Values.frontend.port }}"
             - name: HOSTNAME
               value: "0.0.0.0"
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: {{ .Values.frontend.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.frontend.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.frontend.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.frontend.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.frontend.readinessProbe.path }}
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: {{ .Values.frontend.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.frontend.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.frontend.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.frontend.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}

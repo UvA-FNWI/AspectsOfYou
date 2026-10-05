@@ -258,12 +258,36 @@ export default function Home() {
   };
 
   // Slot management functions
-  const openSlotPopup = (survey) => {
+  const mapApiViews = (views) =>
+    (views || []).map((v) => ({
+      id: v.id,
+      viewNumber: v.viewNumber,
+      name: v.title || v.name || `View ${v.viewNumber}`,
+    }));
+
+  const openSlotPopup = async (survey) => {
+    const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
+    let views = mapApiViews(survey.views);
+
+    const needsRefresh =
+      views.length === 0 || views.some((v) => v.id === 'default' || typeof v.id !== 'number');
+
+    if (needsRefresh) {
+      try {
+        const response = await fetch(`${apiUrl}/api/viewsurveys/${survey.surveyId}/all`);
+        if (response.ok) {
+          views = mapApiViews(await response.json());
+        }
+      } catch (err) {
+        console.error('Error loading views for slot popup:', err);
+      }
+    }
+
     setSlotPopup({
       open: true,
       surveyId: survey.surveyId,
       surveyTitle: survey.title,
-      views: survey.views || [{ id: 'default', viewNumber: 1, name: 'View 1' }],
+      views,
     });
   };
 
@@ -271,17 +295,54 @@ export default function Home() {
     setSlotPopup({ open: false, surveyId: null, surveyTitle: null, views: [] });
   };
 
-  const assignToSlot = async (slotName, surveyId, viewId = null) => {
+  const resolveViewIdForAssign = async (surveyId, viewId, viewNumber) => {
+    if (viewId == null) return null;
+    if (typeof viewId === 'number' && Number.isInteger(viewId)) return viewId;
+
+    const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
+    const response = await fetch(`${apiUrl}/api/viewsurveys/${surveyId}/all`);
+    if (!response.ok) {
+      throw new Error('Could not load views for this survey');
+    }
+    const views = await response.json();
+    if (!views?.length) {
+      throw new Error('This survey has no views yet. Open the survey editor and create a view first.');
+    }
+
+    const byId = views.find((v) => v.id === viewId || v.id === Number(viewId));
+    if (byId) return byId.id;
+
+    const targetNumber = viewNumber ?? (viewId === 'default' ? 1 : Number(viewId));
+    if (!Number.isNaN(targetNumber)) {
+      const byNumber = views.find((v) => v.viewNumber === targetNumber);
+      if (byNumber) return byNumber.id;
+    }
+
+    return views[0].id;
+  };
+
+  const assignToSlot = async (slotName, surveyId, viewId = null, viewNumber = null) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_DOTNET_API_URL || 'http://localhost:5059';
+      const resolvedViewId = await resolveViewIdForAssign(surveyId, viewId, viewNumber);
+
       const response = await fetch(`${apiUrl}/api/displayslots/${slotName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ surveyId, viewId }),
+        body: JSON.stringify({ surveyId, viewId: resolvedViewId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to assign to slot');
+        let detail = 'Failed to assign to slot';
+        try {
+          const body = await response.json();
+          if (body?.message) detail = body.message;
+          else if (body?.detail) detail = body.detail;
+          else if (body?.title) detail = body.title;
+        } catch {
+          // ignore
+        }
+        throw new Error(detail);
       }
 
       const data = await response.json();
@@ -297,7 +358,7 @@ export default function Home() {
       closeSlotPopup();
     } catch (err) {
       console.error('Error assigning to slot:', err);
-      alert('Failed to assign to slot. Please try again.');
+      alert(err.message || 'Failed to assign to slot. Please try again.');
     }
   };
 
@@ -351,7 +412,12 @@ export default function Home() {
     e.preventDefault();
     setDragOverSlot(null);
     if (draggedView) {
-      await assignToSlot(slotName, draggedView.surveyId, draggedView.viewId);
+      await assignToSlot(
+        slotName,
+        draggedView.surveyId,
+        draggedView.viewId,
+        draggedView.viewNumber,
+      );
       setDraggedView(null);
     }
   };
@@ -755,6 +821,11 @@ export default function Home() {
               {/* Draggable views */}
               <div className="flex flex-wrap gap-2">
                 <span className="text-xs text-gray-400 self-center mr-1">Views:</span>
+                {slotPopup.views.length === 0 && (
+                  <p className="text-sm text-amber-700">
+                    No views for this survey yet. Open the survey in the editor to create one, then try again.
+                  </p>
+                )}
                 {slotPopup.views.map((view) => (
                   <div
                     key={view.id}
@@ -828,7 +899,7 @@ export default function Home() {
                           {slotPopup.views.map((view) => (
                             <button
                               key={view.id}
-                              onClick={() => assignToSlot(slotName, slotPopup.surveyId, view.id)}
+                              onClick={() => assignToSlot(slotName, slotPopup.surveyId, view.id, view.viewNumber)}
                               className="text-xs background-color-primary-main text-white rounded-full px-2 py-1 font-medium hover:opacity-90 transition-opacity"
                             >
                               {view.name}

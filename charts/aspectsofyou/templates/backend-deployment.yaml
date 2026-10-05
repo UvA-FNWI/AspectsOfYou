@@ -14,13 +14,15 @@ spec:
   revisionHistoryLimit: 3
   template:
     metadata:
+      annotations:
+        aspectsofyou.io/release: "{{ .Chart.AppVersion }}"
       labels:
         app: aspectsofyou-endpoint
         component: backend
     spec:
       containers:
         - name: aspectsofyou-endpoint
-          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
+          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag | default .Chart.AppVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.backend.port }}
@@ -29,6 +31,24 @@ spec:
           envFrom:
             - secretRef:
                 name: aspectsofyou-secret
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.livenessProbe.path }}
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.readinessProbe.path }}
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
           {{- if .Values.azure.enabled }}
           volumeMounts:
             - name: secrets-store-inline

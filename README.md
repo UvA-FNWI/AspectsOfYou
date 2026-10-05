@@ -1,84 +1,82 @@
 # Aspects of You
 
-Aspects of You is a multi-component application for creating surveys and visualizing results. This README explains the repository layout, how to run the app locally (via Docker and individually), and where to find each component.
+Aspects of You is an application for creating surveys, collecting responses, and visualizing results. The admin and public survey UI is a **Next.js** app; the **.NET** API owns the database and API.
 
-**Quick Links**
-- **Main services:** `admin/`, `forms/`, `aspectsofyou-endpoint/`
-- **Top-level Docker Compose:** `docker-compose.yml`
+## Repository layout
 
-**Requirements**
-- Docker and Docker Compose
-- For local development: Node.js (16+), npm or yarn, and .NET SDK for the `aspectsofyou-endpoint` service.
+| Path | Role |
+|------|------|
+| `admin/frontend/` | Next.js UI (admin, survey taking, displays, charts) |
+| `aspectsofyou-endpoint/` | ASP.NET Core API, EF Core migrations, PostgreSQL access |
+| `charts/aspectsofyou/` | Helm chart for Kubernetes deployment |
+| `docker-compose.yml` | Local stack: Postgres, API, frontend |
+| `.github/workflows/` | CI: build, test, and release to container registry / Helm |
 
-**Contents**
-- **`admin/`**: Admin UI and admin backend code (React frontend + Node backend).
-- **`forms/`**: Frontend and backend for the public forms/surveys.
-- **`aspectsofyou-endpoint/`**: .NET API project, Entity Framework migrations, and Docker setup for the database-backed endpoint and API.
+## Requirements
 
-**Architecture**
+- **Docker** and **Docker Compose** for the full local stack
+- **Node.js 24+** and npm for frontend development (`admin/frontend`)
+- **.NET 9 SDK** for API development (`aspectsofyou-endpoint`)
 
-The project uses containerized services to separate responsibilities:
-- Frontends: React/Next.js projects that serve the UI for admin and form users.
-- Backend: Node/Express services that serve as application backends for the frontends (in `admin/*`).
-- `aspectsofyou-endpoint`: .NET API that manages the database and provides the canonical API for surveys, questions, answers, and responses.
-- `postgres`: PostgreSQL database container used by the endpoint.
+## Run the full stack (Docker)
 
-## Running the full stack (Docker)
-
-From the repository root you can start the whole system with Docker Compose:
+From the repository root:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-This will build the images and run the services defined in the top-level `docker-compose.yml` (and any included compose files). Use `-d` to run in detached mode.
+- Frontend: [http://localhost:3003](http://localhost:3003) (mapped from container port 3000)
+- API: [http://localhost:5059](http://localhost:5059)
+- Postgres: `localhost:5432` (user/database `strawberry` / `aspects` per `docker-compose.yml`)
 
-To stop and remove containers and networks created by Compose:
+Stop and remove containers:
 
 ```bash
 docker compose down
 ```
 
-If you only want to run the `aspectsofyou-endpoint` stack (it has its own compose file), you can run:
+For SurfConext and other secrets locally, use a root `.env` file as referenced in `docker-compose.yml` (do not commit secrets).
+
+## Local development (individual components)
+
+### Admin frontend
+
+```bash
+cd admin/frontend
+npm install
+export NEXT_PUBLIC_DOTNET_API_URL=http://localhost:5059   # or your API URL
+npm run dev
+```
+
+Default dev URL is [http://localhost:3000](http://localhost:3000) unless configured otherwise.
+
+### API endpoint
 
 ```bash
 cd aspectsofyou-endpoint
-docker compose up --build
+dotnet restore UvA.AspectsOfYou.Endpoint.csproj
+dotnet run --project UvA.AspectsOfYou.Endpoint.csproj
 ```
 
-## Running components individually (local development)
+Set connection strings and SurfConext settings via `appsettings.json`, user secrets, or environment variables (see `appsettings.json` and Helm `values.yaml` for production-oriented keys).
 
-The repo contains multiple sub-projects. Typical development flow is to run the frontend and backend for the area you are working on.
+### Database migrations
 
-- Admin frontend (`admin/frontend`)
-  - Install: `cd admin/frontend && npm install`
-  - Run (dev): `npm run dev`
-
-- Admin backend (`admin/backend`)
-  - Install: `cd admin/backend && npm install`
-  - Run: `npm start` (or `node index.js`)
-
-- Forms frontend (`forms/frontend` or top-level `frontend`)
-  - Install: `cd forms/frontend && npm install`
-  - Run (dev): `npm run dev`
-
-- Forms backend (`forms/backend`)
-  - Install: `cd forms/backend && npm install`
-  - Run: `npm start` (or `node index.js`)
-
-- API endpoint (`aspectsofyou-endpoint`)
-  - The API is a .NET project. To run locally without Docker:
-    - Restore and run: `cd aspectsofyou-endpoint && dotnet restore && dotnet run`
-    - If you need to run EF migrations: `dotnet ef database update` (ensure `dotnet-ef` is installed and `appsettings.json` connection strings are set).
-
-Note: exact `package.json` scripts may vary per frontend/backend — check the `package.json` files under each subfolder for the actual script names and required env vars.
-
-## Migrations & Database
-
-Entity Framework migrations are present in `aspectsofyou-endpoint/Migrations`. When running locally (not via Docker), you can apply migrations using the EF CLI:
+Migrations live in `aspectsofyou-endpoint/Migrations`. Apply them with the EF CLI:
 
 ```bash
 cd aspectsofyou-endpoint
 dotnet tool restore
-dotnet ef database update
+dotnet ef database update --project UvA.AspectsOfYou.Endpoint.csproj
 ```
+
+API schema and DTO notes: `aspectsofyou-endpoint/README.md`.
+
+## Production deployment (overview)
+
+Pushes to `main` build container images and a versioned Helm chart; GitOps (Argo CD) deploys from the chart in Azure Container Registry. The workflow notifies **gitops-updater**, which updates `test/aspectsofyou.yaml` in the `k8s-gitops` repository.
+
+## CI
+
+Pull requests and pushes to `main` run lint/build checks on GitHub-hosted runners; merges to `main` trigger the self-hosted workflow that builds images, publishes the Helm chart, and calls gitops-updater.
