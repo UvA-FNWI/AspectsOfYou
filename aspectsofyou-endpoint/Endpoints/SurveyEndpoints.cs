@@ -82,7 +82,9 @@ public static class SurveyEndpoints
         await db.SaveChangesAsync();
     }
 
-    return Results.Created($"/api/surveys/{survey.SurveyId}", survey.SurveyId);
+    return Results.Created(
+        $"/api/surveys/{survey.SurveyId}",
+        new { surveyId = survey.SurveyId });
 }).RequireAuthorization(AuthorizationPolicies.Admin);
 
         app.MapPut("/api/surveys/{id}", async (AspectContext db, Guid id, CreateSurveyDto surveyDto) =>
@@ -253,24 +255,38 @@ public static class SurveyEndpoints
 
         app.MapGet("/api/surveys", async (AspectContext db) =>
 {
-    var surveys = await db.Surveys
+    var surveyRows = await db.Surveys
+        .AsNoTracking()
         .Include(s => s.Questions)
             .ThenInclude(q => q.Answers)
-        .Select(s => new SurveyDto
-        {
-            SurveyId = s.SurveyId,
-            Title = s.Title,
-            Live = s.Live,
-            Editing = s.Editing,
-            // adds questions in order to comply with the DTO interface
-            Questions = s.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuestionDto
+        .ToListAsync();
+
+    var surveyIds = surveyRows.Select(s => s.SurveyId).ToList();
+    var viewRows = await db.ViewSurveys
+        .AsNoTracking()
+        .Where(vs => surveyIds.Contains(vs.SurveyId))
+        .OrderBy(vs => vs.ViewNumber)
+        .ToListAsync();
+
+    var viewsBySurveyId = viewRows
+        .GroupBy(vs => vs.SurveyId)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    var surveys = surveyRows.Select(s => new SurveyDto
+    {
+        SurveyId = s.SurveyId,
+        Title = s.Title,
+        Live = s.Live,
+        Editing = s.Editing,
+        Questions = s.Questions
+            .OrderBy(q => q.OrderIndex)
+            .Select(q => new QuestionDto
             {
                 QuestionId = q.QuestionId,
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
                 AllowMultipleSelections = q.AllowMultipleSelections,
                 OrderIndex = q.OrderIndex,
-                // adds the answers to apply to the questions DTO interface
                 Answers = q.Answers.Select(a => new AnswerDto
                 {
                     AnswerId = a.AnswerID,
@@ -278,18 +294,14 @@ public static class SurveyEndpoints
                     ExtraText = a.ExtraText
                 }).ToList()
             }).ToList(),
-            // Include views for this survey
-            Views = db.ViewSurveys
-                .Where(vs => vs.SurveyId == s.SurveyId)
-                .OrderBy(vs => vs.ViewNumber)
-                .Select(vs => new ViewSummaryDto
-                {
-                    Id = vs.Id,
-                    ViewNumber = vs.ViewNumber,
-                    Title = vs.Title
-                }).ToList()
-        })
-        .ToListAsync();
+        Views = (viewsBySurveyId.TryGetValue(s.SurveyId, out var views) ? views : [])
+            .Select(vs => new ViewSummaryDto
+            {
+                Id = vs.Id,
+                ViewNumber = vs.ViewNumber,
+                Title = vs.Title
+            }).ToList()
+    }).ToList();
 
     return Results.Ok(surveys);
 }).RequireAuthorization(AuthorizationPolicies.Admin);

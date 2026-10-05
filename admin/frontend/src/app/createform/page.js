@@ -4,7 +4,7 @@
 Creation of one form
 */
 
-import React, { Suspense, useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import OpenQuestion from "../components/OpenQuestion";
@@ -46,6 +46,7 @@ function CreateFormInner() {
   const [loadingSurvey, setLoadingSurvey] = useState(false);
   const [saveState, setSaveState] = useState(null);
   const [error, setError] = useState(null);
+  const saveInFlightRef = useRef(false);
   const {
     hasChanges,
     showUnsavedModal,
@@ -241,7 +242,21 @@ function CreateFormInner() {
     })),
   });
 
+  const parseCreatedSurveyId = (response, data) => {
+    if (data) {
+      if (typeof data === "string") return data;
+      if (data.surveyId) return data.surveyId;
+    }
+
+    const location = response.headers.get("Location");
+    if (!location) return null;
+    const match = location.match(/\/api\/surveys\/([^/?#]+)/i);
+    return match?.[1] ?? null;
+  };
+
   const saveSurvey = async ({ goLive }) => {
+    if (saveInFlightRef.current) return false;
+    saveInFlightRef.current = true;
     setSaveState(goLive ? "goLive" : "save");
     setError(null);
 
@@ -263,11 +278,11 @@ function CreateFormInner() {
       }
 
       const data = await response.json().catch(() => null);
-      if (!isEditing && data) {
-        if (typeof data === "string") {
-          setSurveyId(data);
-        } else if (data.surveyId) {
-          setSurveyId(data.surveyId);
+      if (!isEditing) {
+        const createdId = parseCreatedSurveyId(response, data);
+        if (createdId) {
+          setSurveyId(createdId);
+          router.replace(`/createform?surveyId=${createdId}`);
         }
       }
 
@@ -284,6 +299,7 @@ function CreateFormInner() {
       setError(err.message);
       return false;
     } finally {
+      saveInFlightRef.current = false;
       setSaveState(null);
     }
   };
