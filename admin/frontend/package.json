@@ -22,7 +22,7 @@
     "html2canvas-pro": "^2.5.1",
     "jspdf": "^4.2.1",
     "link": "^2.1.2",
-    "next": "16.3.8",
+    "next": "16.4.0",
     "oidc-client-ts": "^3.4.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
