@@ -1,9 +1,19 @@
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 
 export default defineConfig([
   ...nextVitals,
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
   {
+    settings: {
+      // ESLint 10 flat config: avoid eslint-plugin-react calling legacy getFilename().
+      react: { version: "19" },
+    },
     rules: {
       // New in eslint-plugin-react-hooks v7; existing app patterns predate these checks.
       "react-hooks/set-state-in-effect": "off",
