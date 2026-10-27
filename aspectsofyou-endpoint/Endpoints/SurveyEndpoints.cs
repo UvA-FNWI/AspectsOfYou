@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using UvA.AspectsOfYou.Endpoint.Authentication;
+using UvA.AspectsOfYou.Endpoint.Services;
 using UvA.AspectsOfYou.Endpoint.Dtos;
 using UvA.AspectsOfYou.Endpoint.Entities;
 
@@ -549,37 +550,10 @@ Deletes a survey from the database
 */
         app.MapDelete("/api/surveys/delete/{id}", async (AspectContext db, Guid id) =>
 {
-    Console.WriteLine($"Attempting to delete survey with ID: {id}");
-
-    var survey = await db.Surveys
-        .Include(s => s.Questions)
-            .ThenInclude(q => q.Answers)
-        .Include(s => s.Responses)
-        .FirstOrDefaultAsync(s => s.SurveyId == id);
-
-    if (survey is null)
-    {
-        Console.WriteLine($"Survey with ID {id} not found.");
-        return Results.NotFound(new { message = "Survey not found" });
-    }
-
-    Console.WriteLine($"Found survey with ID {id}. Deleting related entities...");
-
-    // Remove related responses
-    db.Responses.RemoveRange(survey.Responses);
-
-    // Remove related questions and their answers
-    foreach (var question in survey.Questions)
-    {
-        db.Answers.RemoveRange(question.Answers);
-        db.Questions.Remove(question);
-    }
-
-    // Remove the survey itself
-    db.Surveys.Remove(survey);
-    await db.SaveChangesAsync();
-
-    return Results.NoContent();
+    var deleted = await SurveyDeletion.TryDeleteSurveyAsync(db, id);
+    return deleted
+        ? Results.NoContent()
+        : Results.NotFound(new { message = "Survey not found" });
 }).RequireAuthorization(AuthorizationPolicies.Admin);
     }
 }
