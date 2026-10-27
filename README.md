@@ -82,3 +82,20 @@ Pushes to `main` build container images and a versioned Helm chart; GitOps (Argo
 ## CI
 
 Pull requests and pushes to `main` run lint/build checks on GitHub-hosted runners; merges to `main` trigger the self-hosted workflow that builds images, publishes the Helm chart, and calls gitops-updater.
+
+### Backend integration tests (local only)
+
+CI runs lint/build only (no database). Integration tests use Postgres on your machine — e.g. `docker compose up postgres`. Create a dedicated database once:
+
+```bash
+createdb -h localhost -U strawberry aspects_test   # password: strawberry (see docker-compose.yml)
+```
+
+Run tests:
+
+```bash
+cd aspectsofyou-endpoint
+dotnet test ../aspectsofyou-endpoint.Tests/UvA.AspectsOfYou.Endpoint.Tests.csproj
+```
+
+Optional: set `ASPECTS_TEST_DATABASE` to a full Npgsql connection string instead of the default `localhost` / `aspects_test` settings.
